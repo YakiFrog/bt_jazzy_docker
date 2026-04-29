@@ -3,6 +3,12 @@
 # 基本コマンド
 alias build='colcon build --symlink-install'
 alias src='source install/setup.bash'
+alias tt='source ~/.bashrc'
+
+# 自動で環境を読み込む
+if [ -f "/ros2_ws/install/setup.bash" ]; then
+    source "/ros2_ws/install/setup.bash"
+fi
 
 # サンプル実行用
 alias run_logic='ros2 run bt_python_logic action_server'

@@ -21,6 +21,7 @@ WORKDIR /ros2_ws
 
 # Source ROS 2 setup in bashrc
 RUN echo "source /opt/ros/jazzy/setup.bash" >> /root/.bashrc
+RUN echo "if [ -f /ros2_ws/.bashrc_docker ]; then source /ros2_ws/.bashrc_docker; fi" >> /root/.bashrc
 
 # Set up entrypoint
 COPY ./entrypoint.sh /
