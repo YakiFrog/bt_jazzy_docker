@@ -14,6 +14,7 @@ RUN apt-get update && apt-get install -y \
     ros-jazzy-ros2-controllers \
     libncurses5-dev \
     libncursesw5-dev \
+    python3-tk \
     && rm -rf /var/lib/apt/lists/*
 
 # Create workspace
