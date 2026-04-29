@@ -199,6 +199,7 @@ class ActionCreatorGUI(QWidget):
             empty_xml = f"""<root BTCPP_format="4">
     <BehaviorTree ID="MainTree">
         <Sequence>
+            <AlwaysSuccess name="placeholder"/>
             <!-- {tree_name} の内容をここに作成してください -->
         </Sequence>
     </BehaviorTree>
