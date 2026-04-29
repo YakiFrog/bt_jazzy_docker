@@ -26,6 +26,19 @@ def add_to_file_after_marker(file_path, content, marker):
             if marker in line:
                 f.write(content)
 
+def update_tree_path_in_cpp(file_path, new_xml_name):
+    if not os.path.exists(file_path):
+        return
+    with open(file_path, 'r') as f:
+        content = f.read()
+    
+    # 既存の .createTreeFromFile("...") の中身を置換
+    new_path = f'/ros2_ws/src/bt_example/tree/{new_xml_name}'
+    updated_content = re.sub(r'createTreeFromFile\(".+?"\)', f'createTreeFromFile("{new_path}")', content)
+    
+    with open(file_path, 'w') as f:
+        f.write(updated_content)
+
 def add_to_import_line(file_path, new_item, marker):
     with open(file_path, 'r') as f:
         lines = f.readlines()
@@ -43,7 +56,7 @@ class ActionCreatorGUI(QWidget):
 
     def initUI(self):
         self.setWindowTitle("BT Action Scaffolder (PySide6)")
-        self.setMinimumSize(600, 850)
+        self.setMinimumSize(600, 900)
         self.setStyleSheet("""
             QWidget { background-color: #ffffff; color: #333333; font-family: 'Noto Sans CJK JP', 'Meiryo', sans-serif; }
             QLabel { color: #333333; background-color: transparent; }
@@ -80,8 +93,8 @@ class ActionCreatorGUI(QWidget):
         help_layout.addWidget(help_title)
         
         usage_text = (
-            "・<b>Action生成</b>: 下のフォームを入力して実行します。\n"
-            "・<b>空のツリー作成</b>: Groot2で一から作りたい場合に実行します。"
+            "・<b>Action生成</b>: 下のフォームからアクションを追加します。\n"
+            "・<b>ツリー管理</b>: ファイル名を指定して新規作成できます。作成するとプログラムの読み込み先も自動で切り替わります。"
         )
         help_desc = QLabel(usage_text)
         help_desc.setWordWrap(True)
@@ -90,8 +103,13 @@ class ActionCreatorGUI(QWidget):
         c_layout.addWidget(help_box)
         c_layout.addSpacing(20)
 
-        # 空のツリー作成ボタン
-        self.new_tree_btn = QPushButton("✨ 空のツリー (my_tree.xml) を新規作成")
+        # ツリーファイル名入力
+        c_layout.addWidget(QLabel("<b>Tree XML Filename:</b>"))
+        self.tree_name_input = QLineEdit()
+        self.tree_name_input.setText("my_tree.xml")
+        c_layout.addWidget(self.tree_name_input)
+
+        self.new_tree_btn = QPushButton("✨ この名前で空のツリーを新規作成・設定")
         self.new_tree_btn.setObjectName("NewTreeBtn")
         self.new_tree_btn.clicked.connect(self.create_empty_tree)
         c_layout.addWidget(self.new_tree_btn)
@@ -100,7 +118,7 @@ class ActionCreatorGUI(QWidget):
         c_layout.addWidget(QLabel("<hr>"))
         c_layout.addSpacing(10)
 
-        c_layout.addWidget(QLabel("<b>Action Name (PascalCase):</b>"))
+        c_layout.addWidget(QLabel("<b>New Action Name (PascalCase):</b>"))
         self.name_input = QLineEdit()
         self.name_input.setPlaceholderText("例: CleanRoom")
         c_layout.addWidget(self.name_input)
@@ -168,24 +186,31 @@ class ActionCreatorGUI(QWidget):
                 break
 
     def create_empty_tree(self):
+        tree_name = self.tree_name_input.text().strip()
+        if not tree_name.endswith('.xml'): tree_name += '.xml'
+
         reply = QMessageBox.question(self, '確認', 
-                                   "現在の my_tree.xml を上書きして空のツリーを作成しますか？",
+                                   f"'{tree_name}' を新規作成し、プログラムの読み込み先として設定しますか？",
                                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
         if reply == QMessageBox.Yes:
-            tree_path = "src/bt_example/tree/my_tree.xml"
+            tree_path = f"src/bt_example/tree/{tree_name}"
             os.makedirs(os.path.dirname(tree_path), exist_ok=True)
-            empty_xml = """<root BTCPP_format="4">
+            empty_xml = f"""<root BTCPP_format="4">
     <BehaviorTree ID="MainTree">
         <Sequence>
-            <!-- ここにノードを配置してください -->
+            <!-- {tree_name} の内容をここに作成してください -->
         </Sequence>
     </BehaviorTree>
 </root>
 """
             with open(tree_path, 'w') as f:
                 f.write(empty_xml)
-            QMessageBox.information(self, "成功", "空のツリーを作成しました。Groot2で開き直してください。")
+            
+            # main.cpp のパスを更新
+            update_tree_path_in_cpp("src/bt_example/src/main.cpp", tree_name)
+            
+            QMessageBox.information(self, "成功", f"'{tree_name}' を作成しました。\nmain.cpp の読み込み先も更新しました。")
 
     def generate(self):
         name = self.name_input.text().strip()
