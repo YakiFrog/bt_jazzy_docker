@@ -42,6 +42,40 @@ ros2 run bt_example bt_node
     - Groot2 の **Monitor** タブを選択。
     - **Connect** ボタンをクリック（IP: `127.0.0.1`, Port: `1667`）。
 
+## Python との連携 (Nav2 方式)
+本環境では、Nav2 と同様に「Behavior Tree は C++、実際のロジックは Python」という構成が可能です。
+
+### アーキテクチャ
+```mermaid
+graph LR
+    subgraph "C++ (Container)"
+        BT[Behavior Tree Engine]
+        AC[Action Client Node]
+    end
+
+    subgraph "Python (Container)"
+        AS[Action Server / Logic]
+    end
+
+    BT --> AC
+    AC -- "1. Goal (message)" --> AS
+    AS -- "2. Feedback (progress)" --> AC
+    AS -- "3. Result (success)" --> AC
+    AC --> BT
+    
+    style AS fill:#f9f,stroke:#333,stroke-width:2px
+```
+
+### 実行方法
+1. **Python ロジック (Action Server) の起動**:
+    ```bash
+    ros2 run bt_python_logic action_server
+    ```
+2. **Behavior Tree (C++) の起動**:
+    ```bash
+    ros2 run bt_example bt_node
+    ```
+
 ## コードの解説
 サンプルコードの詳しい解説は、[docs/SAMPLE_CODE.md](docs/SAMPLE_CODE.md) を参照してください。
 
