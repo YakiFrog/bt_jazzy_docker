@@ -5,10 +5,11 @@
 #include <bt_msgs/action/say_something.hpp>
 #include <bt_msgs/action/move_to_target.hpp>
 #include <bt_msgs/action/pick_up_item.hpp>
-#include <rclcpp/rclcpp.hpp>
 #include <bt_msgs/action/clean_room.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 using namespace BT;
+
 class CleanRoomAction : public RosActionNode<bt_msgs::action::CleanRoom>
 {
 public:
@@ -117,11 +118,11 @@ int main(int argc, char** argv)
     auto node = std::make_shared<rclcpp::Node>("bt_node_client");
 
     BehaviorTreeFactory factory;
-    params.default_port_value = "cleanroom";
-    factory.registerNodeType<CleanRoomAction>("CleanRoom", params);
-
     RosNodeParams params;
     params.nh = node;
+
+    params.default_port_value = "clean_room";
+    factory.registerNodeType<CleanRoomAction>("CleanRoom", params);
 
     params.default_port_value = "pickupitem";
     factory.registerNodeType<PickUpItemAction>("PickUpItem", params);
