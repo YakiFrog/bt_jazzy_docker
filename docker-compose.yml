@@ -1,7 +1,7 @@
 services:
   bt_dev:
     build: .
-    container_name: bt_jazzy_dev
+    container_name: bt_dev_container
     volumes:
       - .:/ros2_ws
     environment:
