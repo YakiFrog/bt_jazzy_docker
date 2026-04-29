@@ -1,84 +1,77 @@
-# サンプルコードの解説 (`main.cpp`)
+# サンプルコードの解説 (C++ BT + Python Logic)
 
-このプロジェクトに同梱されているサンプルコードの構造と、BehaviorTree.CPP v4 の基本的な考え方を解説します。
+本プロジェクトでは、Behavior Tree 本体を **C++** で記述し、具体的なロボットのロジック（重い処理や Action Server）を **Python** で記述する、Nav2 と同様の実践的な構成を採用しています。
 
-## プログラムの 3 つのステップ
+## 構成の全体像
 
-Behavior Tree プログラミングは、大きく分けて **「部品を作る」「組み立てる」「動かす」** の 3 つのステップで構成されます。
+1. **`bt_msgs`**: 通信用のインターフェース（Action）を定義。
+2. **`bt_python_logic`**: Python で書かれたロジック。Action Server として動作。
+3. **`bt_example`**: C++ で書かれた Behavior Tree エンジン。Python 側を Action Client として呼び出す。
 
 ---
 
-### 1. 部品を作る (C++ ノードの定義)
-Behavior Tree の最小単位である「ノード」を C++ クラスとして作成します。
+## 1. Python 側のロジック (`action_server.py`)
+
+ロボットの具体的な動きや時間のかかる処理を担当します。
+
+```python
+# Action Server の核となるコールバック
+def execute_callback(self, goal_handle):
+    # BT から届いたメッセージを取得
+    message = goal_handle.request.message
+    
+    # 処理の進捗をフィードバックとして送信 (1%... 100%)
+    for i in range(1, 6):
+        feedback_msg.progress = i * 20.0
+        goal_handle.publish_feedback(feedback_msg)
+        time.sleep(0.5)
+
+    # 成功を報告
+    goal_handle.succeed()
+    return result
+```
+
+## 2. C++ 側の Behavior Tree (`main.cpp`)
+
+ツリーの構築と、Python Action Server の呼び出しを担当します。`RosActionNode` という便利なクラスを継承しています。
 
 ```cpp
-class SayHello : public SyncActionNode {
-public:
-    // ... コンストラクタ等 ...
-
-    // ポートの定義（XML から値を受け取るための窓口）
-    static PortsList providedPorts() {
-        return { InputPort<std::string>("message") };
+// Python 側の Action を呼び出すための BT ノード定義
+class SaySomethingAction : public RosActionNode<bt_msgs::action::SaySomething>
+{
+    // Goal（リクエスト）の作成
+    bool setGoal(Goal& goal) override {
+        goal.message = "Hello from BT!";
+        return true;
     }
 
-    // ノードの実行ロジック
-    NodeStatus tick() override {
-        std::string msg;
-        getInput("message", msg); // XML で指定されたメッセージを取得
-        std::cout << "Robot says: " << msg << std::endl;
-        return NodeStatus::SUCCESS; // 完了を報告
+    // Feedback（途中経過）の受信
+    NodeStatus onFeedback(const std::shared_ptr<const Feedback> f) override {
+        std::cout << "進捗: " << f->progress << "%" << std::endl;
+        return NodeStatus::RUNNING;
+    }
+
+    // Result（最終結果）の受信
+    NodeStatus onResultReceived(const WrappedResult& wr) override {
+        return NodeStatus::SUCCESS;
     }
 };
 ```
-- **`SyncActionNode`**: 短時間で完了するアクション（同期アクション）のベースクラス。
-- **`tick()`**: このノードの実行順が回ってきたときに呼ばれるメインロジック。
-- **`NodeStatus`**: 実行結果（SUCCESS, FAILURE, RUNNING）を返します。
 
-### 2. 組み立てる (ファクトリへの登録とツリー生成)
-作った C++ 部品を、設計図（XML）に基づいて組み立てます。
+## 3. 設計図 (`main.cpp` 内の XML 定義)
 
-```cpp
-BehaviorTreeFactory factory;
-
-// C++ クラスを "SayHello" という名前で XML 上で使えるように登録
-factory.registerNodeType<SayHello>("SayHello");
-
-// XML ファイルを読み込んで、実行可能な「ツリー」を生成
-auto tree = factory.createTreeFromFile("my_tree.xml");
+```xml
+<Sequence>
+    <SaySomethingAction message="最初の処理を Python で実行"/>
+    <SaySomethingAction message="二番目の処理を Python で実行"/>
+</Sequence>
 ```
-
-### 3. 動かす (実行と可視化)
-組み立てたツリーを動かし、その様子を外部ツール（Groot2）に送信します。
-
-```cpp
-// Groot2 送信用の中継役をインスタンス化
-Groot2Publisher publisher(tree);
-
-while (true) {
-    // ツリーのルートから順にノードを実行
-    tree.tickWhileRunning();
-    
-    // 2秒待機（ループの間隔）
-    std::this_thread::sleep_for(std::chrono::seconds(2));
-}
-```
+C++ で作成した `SaySomethingAction` が XML 上でタグとして使われ、直感的にロボットの挙動を組み立てられます。
 
 ---
 
-## 設計図 (`my_tree.xml`) の役割
+## なぜこの構成にするのか？
 
-Behavior Tree の最大の特徴は、**「機能（C++）」と「振る舞い（XML）」の分離**にあります。
-
-```xml
-<root BTCPP_format="4">
-    <BehaviorTree ID="MainTree">
-        <Sequence name="root_sequence">
-            <SayHello message="Hello!"/>
-            <SayHello message="Bye!"/>
-        </Sequence>
-    </BehaviorTree>
-</root>
-```
-
-- **`Sequence`**: 制御ノードの一つ。子供のノードを左から順に実行し、一つでも失敗したらそこで中止します。
-- **メリット**: プログラムをコンパイルし直すことなく、XML ファイルを書き換えるだけでロボットの挙動（挨拶の順番や条件）を変更できます。
+- **可視化**: BehaviorTree.CPP v4 を使うことで、Groot2 による強力なデバッグ・監視が可能になります。
+- **柔軟性**: ロジック部分を Python で書くことで、開発スピードが向上し、ライブラリの利用も容易になります。
+- **標準的**: これは ROS 2 のナビゲーションスタック (Nav2) で採用されている世界標準の設計思想です。
