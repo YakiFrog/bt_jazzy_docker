@@ -7,8 +7,29 @@
 #include <bt_msgs/action/pick_up_item.hpp>
 #include <bt_msgs/action/clean_room.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <bt_msgs/action/tekito_action.hpp>
 
 using namespace BT;
+class TekitoActionAction : public RosActionNode<bt_msgs::action::TekitoAction>
+{
+public:
+    TekitoActionAction(const std::string& name, const NodeConfig& conf, const RosNodeParams& params)
+      : RosActionNode<bt_msgs::action::TekitoAction>(name, conf, params) {}
+
+    static PortsList providedPorts() {
+        return providedBasicPorts({ InputPort<int>("tekitodane") });
+    }
+
+    bool setGoal(Goal& goal) override {
+        getInput("tekitodane", goal.tekitodane);
+        return true;
+    }
+
+    NodeStatus onResultReceived(const WrappedResult& wr) override {
+        return wr.result->success ? NodeStatus::SUCCESS : NodeStatus::FAILURE;
+    }
+};
+
 
 class CleanRoomAction : public RosActionNode<bt_msgs::action::CleanRoom>
 {
@@ -118,6 +139,9 @@ int main(int argc, char** argv)
     auto node = std::make_shared<rclcpp::Node>("bt_node_client");
 
     BehaviorTreeFactory factory;
+    params.default_port_value = "tekito_action";
+    factory.registerNodeType<TekitoActionAction>("TekitoAction", params);
+
     RosNodeParams params;
     params.nh = node;
 

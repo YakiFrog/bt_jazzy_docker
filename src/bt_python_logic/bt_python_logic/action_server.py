@@ -3,9 +3,15 @@ import math
 import rclpy
 from rclpy.action import ActionServer
 from rclpy.node import Node
-from bt_msgs.action import SaySomething, MoveToTarget, PickUpItem, CleanRoom
+from bt_msgs.action import SaySomething, MoveToTarget, PickUpItem, CleanRoom, TekitoAction
 
 class MultiActionServer(Node):
+    def tekito_action_callback(self, goal_handle):
+        self.get_logger().info('TekitoAction started')
+        # TODO: 具体的なロジックをここに実装
+        goal_handle.succeed()
+        return TekitoAction.Result(success=True)
+
     def cleanroom_callback(self, goal_handle):
         self.get_logger().info('CleanRoom started')
         goal_handle.succeed()
@@ -20,6 +26,7 @@ class MultiActionServer(Node):
         return PickUpItem.Result(success=True)
 
     def __init__(self):
+        self._tekito_action_server = ActionServer(self, TekitoAction, 'tekito_action', self.tekito_action_callback)
         self._cleanroom_server = ActionServer(self, CleanRoom, 'cleanroom', self.cleanroom_callback)
         super().__init__('multi_action_server')
         self._pickupitem_server = ActionServer(self, PickUpItem, 'pickupitem', self.pickupitem_callback)
