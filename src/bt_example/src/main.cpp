@@ -160,7 +160,7 @@ int main(int argc, char** argv)
 
     // XML ファイルからツリーを読み込む
     // コンテナ内の絶対パスを指定します
-    auto tree = factory.createTreeFromFile("/ros2_ws/src/bt_example/tree/my_tree.xml");
+    auto tree = factory.createTreeFromFile("/ros2_ws/src/bt_example/tree/my_tree2.xml");
     
     Groot2Publisher publisher(tree);
 
