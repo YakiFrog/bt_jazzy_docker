@@ -4,9 +4,31 @@
 #include <behaviortree_ros2/bt_action_node.hpp>
 #include <bt_msgs/action/say_something.hpp>
 #include <bt_msgs/action/move_to_target.hpp>
+#include <bt_msgs/action/pick_up_item.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 using namespace BT;
+
+class PickUpItemAction : public RosActionNode<bt_msgs::action::PickUpItem>
+{
+public:
+    PickUpItemAction(const std::string& name, const NodeConfig& conf, const RosNodeParams& params)
+      : RosActionNode<bt_msgs::action::PickUpItem>(name, conf, params) {}
+
+    static PortsList providedPorts() {
+        return providedBasicPorts({ InputPort<std::string>("item") });
+    }
+
+    bool setGoal(Goal& goal) override {
+        getInput("item", goal.item);
+        return true;
+    }
+
+    NodeStatus onResultReceived(const WrappedResult& wr) override {
+        return wr.result->success ? NodeStatus::SUCCESS : NodeStatus::FAILURE;
+    }
+};
+
 
 /**
  * 挨拶アクションノード
@@ -76,6 +98,9 @@ int main(int argc, char** argv)
     BehaviorTreeFactory factory;
     RosNodeParams params;
     params.nh = node;
+
+    params.default_port_value = "pickupitem";
+    factory.registerNodeType<PickUpItemAction>("PickUpItem", params);
 
     // ノードの登録
     params.default_port_value = "say_something";
