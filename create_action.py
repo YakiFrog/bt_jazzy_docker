@@ -43,7 +43,7 @@ class ActionCreatorGUI(QWidget):
 
     def initUI(self):
         self.setWindowTitle("BT Action Scaffolder (PySide6)")
-        self.setMinimumSize(600, 800)
+        self.setMinimumSize(600, 850)
         self.setStyleSheet("""
             QWidget { background-color: #ffffff; color: #333333; font-family: 'Noto Sans CJK JP', 'Meiryo', sans-serif; }
             QLabel { color: #333333; background-color: transparent; }
@@ -51,6 +51,7 @@ class ActionCreatorGUI(QWidget):
             QComboBox { padding: 5px; border: 1px solid #cccccc; border-radius: 4px; background-color: #fcfcfc; color: #000000; }
             QPushButton#GenerateBtn { background-color: #28a745; color: #ffffff; font-weight: bold; border-radius: 4px; padding: 10px; }
             QPushButton#AddBtn { background-color: #007bff; color: #ffffff; border-radius: 4px; padding: 5px; }
+            QPushButton#NewTreeBtn { background-color: #6c757d; color: #ffffff; border-radius: 4px; padding: 10px; }
             QFrame#Header { background-color: #24292e; }
             QFrame#HelpBox { background-color: #fff9db; border: 1px solid #ffec99; border-radius: 8px; }
         """)
@@ -79,8 +80,8 @@ class ActionCreatorGUI(QWidget):
         help_layout.addWidget(help_title)
         
         usage_text = (
-            "・<b>全自動生成</b>: Action作成からC++/Python/Palette登録まで一括で行います。\n"
-            "・<b>Paletteのみ更新</b>: 下のチェックを入れると、既存アクションをGroot2に登録するだけ（コード変更なし）が可能です。"
+            "・<b>Action生成</b>: 下のフォームを入力して実行します。\n"
+            "・<b>空のツリー作成</b>: Groot2で一から作りたい場合に実行します。"
         )
         help_desc = QLabel(usage_text)
         help_desc.setWordWrap(True)
@@ -88,6 +89,16 @@ class ActionCreatorGUI(QWidget):
         help_layout.addWidget(help_desc)
         c_layout.addWidget(help_box)
         c_layout.addSpacing(20)
+
+        # 空のツリー作成ボタン
+        self.new_tree_btn = QPushButton("✨ 空のツリー (my_tree.xml) を新規作成")
+        self.new_tree_btn.setObjectName("NewTreeBtn")
+        self.new_tree_btn.clicked.connect(self.create_empty_tree)
+        c_layout.addWidget(self.new_tree_btn)
+        
+        c_layout.addSpacing(20)
+        c_layout.addWidget(QLabel("<hr>"))
+        c_layout.addSpacing(10)
 
         c_layout.addWidget(QLabel("<b>Action Name (PascalCase):</b>"))
         self.name_input = QLineEdit()
@@ -116,7 +127,6 @@ class ActionCreatorGUI(QWidget):
 
         c_layout.addSpacing(20)
         
-        # パレットのみチェックボックス
         self.palette_only_cb = QCheckBox("Groot2のパレット更新のみ行う (コード生成をスキップ)")
         self.palette_only_cb.setStyleSheet("font-weight: bold; color: #007bff;")
         c_layout.addWidget(self.palette_only_cb)
@@ -156,6 +166,26 @@ class ActionCreatorGUI(QWidget):
                 self.field_rows.pop(i)
                 row_widget.deleteLater()
                 break
+
+    def create_empty_tree(self):
+        reply = QMessageBox.question(self, '確認', 
+                                   "現在の my_tree.xml を上書きして空のツリーを作成しますか？",
+                                   QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+        if reply == QMessageBox.Yes:
+            tree_path = "src/bt_example/tree/my_tree.xml"
+            os.makedirs(os.path.dirname(tree_path), exist_ok=True)
+            empty_xml = """<root BTCPP_format="4">
+    <BehaviorTree ID="MainTree">
+        <Sequence>
+            <!-- ここにノードを配置してください -->
+        </Sequence>
+    </BehaviorTree>
+</root>
+"""
+            with open(tree_path, 'w') as f:
+                f.write(empty_xml)
+            QMessageBox.information(self, "成功", "空のツリーを作成しました。Groot2で開き直してください。")
 
     def generate(self):
         name = self.name_input.text().strip()
