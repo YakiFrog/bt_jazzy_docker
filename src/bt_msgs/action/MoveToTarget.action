@@ -1,0 +1,9 @@
+# Request: 目標座標
+float32 x
+float32 y
+---
+# Result: 最終的な成否
+bool success
+---
+# Feedback: 目標までの残り距離
+float32 distance

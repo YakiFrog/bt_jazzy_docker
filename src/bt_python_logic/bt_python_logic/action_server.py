@@ -1,65 +1,75 @@
 import time
+import math
 import rclpy
 from rclpy.action import ActionServer
 from rclpy.node import Node
-from bt_msgs.action import SaySomething
+from bt_msgs.action import SaySomething, MoveToTarget
 
-class SaySomethingActionServer(Node):
+class MultiActionServer(Node):
     """
-    Python で記述されたロジック側（アクションサーバー）
-    具体的なロボットの処理や時間のかかる計算はここで行います。
+    複数のアクションに対応したロジックサーバー
     """
     def __init__(self):
-        super().__init__('say_something_action_server')
-        # アクションサーバーの初期化
-        # サービス名: 'say_something'
-        self._action_server = ActionServer(
-            self,
-            SaySomething,
-            'say_something',
-            self.execute_callback)
-        self.get_logger().info('Python ロジック（Action Server）が起動しました。')
-
-    def execute_callback(self, goal_handle):
-        """
-        BT ノードからリクエスト（Goal）が届いた時に呼ばれるメインロジック
-        """
-        message = goal_handle.request.message
-        self.get_logger().info(f'リクエストを受信: "{message}"')
+        super().__init__('multi_action_server')
         
-        feedback_msg = SaySomething.Feedback()
+        # 1. 挨拶アクションのサーバー
+        self._say_something_server = ActionServer(
+            self, SaySomething, 'say_something', self.say_something_callback)
         
-        # ここに具体的なロジック（例: ロボットを動かす、計算するなど）を記述します
-        # 今回はループを回して進捗を報告するサンプルです
-        for i in range(1, 6):
-            # 進捗率（Feedback）を設定
-            feedback_msg.progress = i * 20.0
-            self.get_logger().info(f'ロジック実行中... 進捗: {feedback_msg.progress}%')
+        # 2. 移動アクションのサーバー
+        self._move_to_target_server = ActionServer(
+            self, MoveToTarget, 'move_to_target', self.move_to_target_callback)
             
-            # BT 側に途中経過を送信
+        self.get_logger().info('Python ロジックサーバーが起動しました（SaySomething & MoveToTarget）')
+
+    def say_something_callback(self, goal_handle):
+        """挨拶ロジック"""
+        message = goal_handle.request.message
+        self.get_logger().info(f'挨拶リクエスト: {message}')
+        for i in range(1, 6):
+            goal_handle.publish_feedback(SaySomething.Feedback(progress=i*20.0))
+            time.sleep(0.3)
+        goal_handle.succeed()
+        return SaySomething.Result(success=True)
+
+    def move_to_target_callback(self, goal_handle):
+        """移動ロジック（シミュレーション）"""
+        target_x = goal_handle.request.x
+        target_y = goal_handle.request.y
+        self.get_logger().info(f'移動開始: 目標座標 ({target_x}, {target_y})')
+        
+        feedback_msg = MoveToTarget.Feedback()
+        
+        # 現在地 (0,0) から目標まで近づいていくシミュレーション
+        current_x, current_y = 0.0, 0.0
+        
+        while True:
+            # 目標までの距離を計算
+            dist = math.sqrt((target_x - current_x)**2 + (target_y - current_y)**2)
+            feedback_msg.distance = dist
             goal_handle.publish_feedback(feedback_msg)
             
-            # 処理時間のシミュレート
+            if dist < 0.1: # 到着判定
+                break
+                
+            self.get_logger().info(f'現在地: ({current_x:.2f}, {current_y:.2f}), 残り距離: {dist:.2f}')
+            
+            # 少しずつ目標に近づける
+            current_x += (target_x - current_x) * 0.2
+            current_y += (target_y - current_y) * 0.2
             time.sleep(0.5)
 
-        # 全ての処理が正常に完了したことを報告
         goal_handle.succeed()
-        self.get_logger().info('ロジック完了。')
-
-        # 最終的な実行結果（Result）を返す
-        result = SaySomething.Result()
-        result.success = True
-        return result
+        self.get_logger().info('目標地点に到着しました！')
+        return MoveToTarget.Result(success=True)
 
 def main(args=None):
     rclpy.init(args=args)
-    # ノードを生成して実行
-    action_server = SaySomethingActionServer()
+    server = MultiActionServer()
     try:
-        rclpy.spin(action_server)
+        rclpy.spin(server)
     except KeyboardInterrupt:
         pass
-    action_server.destroy_node()
     rclpy.shutdown()
 
 if __name__ == '__main__':
