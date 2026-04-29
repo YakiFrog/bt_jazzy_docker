@@ -33,6 +33,15 @@ docker compose run --rm bt_dev
 ros2 run bt_example bt_node
 ```
 
+## 可視化 (Groot2)
+本環境は Behavior Tree 可視化ツール **Groot2** に対応しています。
+
+1. **プログラム側の準備**: `main.cpp` 等で `Groot2Publisher` をインスタンス化します。
+2. **Groot2 の起動**: ホスト側で Groot2 を起動します。
+3. **接続**: 
+    - Groot2 の **Monitor** タブを選択。
+    - **Connect** ボタンをクリック（IP: `127.0.0.1`, Port: `1667`）。
+
 ## ディレクトリ構成
 - `src/`: ROS 2 のソースコード（自分のパッケージはここに追加します）
 - `Dockerfile`: コンテナの定義ファイル
