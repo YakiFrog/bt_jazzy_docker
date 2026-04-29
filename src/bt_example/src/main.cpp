@@ -1,66 +1,97 @@
 #include <iostream>
 #include <behaviortree_cpp/bt_factory.h>
-#include <behaviortree_cpp/loggers/groot2_publisher.h> // Added for Groot2
-#include <thread>
-#include <chrono>
+#include <behaviortree_cpp/loggers/groot2_publisher.h>
+#include <behaviortree_ros2/bt_action_node.hpp>
+#include <bt_msgs/action/say_something.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 using namespace BT;
 
-// Custom Action
-class SayHello : public SyncActionNode
+// Define the BT Node that calls the ROS 2 Action
+class SaySomethingAction : public RosActionNode<bt_msgs::action::SaySomething>
 {
 public:
-    SayHello(const std::string& name, const NodeConfig& config)
-        : SyncActionNode(name, config)
+    SaySomethingAction(const std::string& name,
+                       const NodeConfig& conf,
+                       const RosNodeParams& params)
+      : RosActionNode<bt_msgs::action::SaySomething>(name, conf, params)
     {}
 
+    // Define the input ports
     static PortsList providedPorts()
     {
-        return { InputPort<std::string>("message") };
+        return providedBasicPorts({ InputPort<std::string>("message") });
     }
 
-    NodeStatus tick() override
+    // This function is called to create the goal message
+    bool setGoal(RosActionNode::Goal& goal) override
     {
         std::string msg;
         if (!getInput<std::string>("message", msg))
         {
-            throw RuntimeError("missing required input [message]");
+            return false;
         }
-        std::cout << "Robot says: " << msg << std::endl;
-        
-        // Add a small delay so we can see the execution in Groot2
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        
-        return NodeStatus::SUCCESS;
+        goal.message = msg;
+        return true;
+    }
+
+    // This function is called when the result is received
+    NodeStatus onResultReceived(const RosActionNode::WrappedResult& wr) override
+    {
+        if (wr.result->success)
+        {
+            std::cout << "[BT Node] Action succeeded!" << std::endl;
+            return NodeStatus::SUCCESS;
+        }
+        return NodeStatus::FAILURE;
+    }
+
+    // This function is called when feedback is received
+    virtual NodeStatus onFeedback(const std::shared_ptr<const bt_msgs::action::SaySomething::Feedback> feedback) override
+    {
+        std::cout << "[BT Node] Progress from Python Logic: " << feedback->progress << "%" << std::endl;
+        return NodeStatus::RUNNING;
     }
 };
 
-int main()
+int main(int argc, char** argv)
 {
+    rclcpp::init(argc, argv);
+    auto node = std::make_shared<rclcpp::Node>("bt_node_client");
+
     BehaviorTreeFactory factory;
-    factory.registerNodeType<SayHello>("SayHello");
 
-    // Load from file for Groot2 visualization
-    auto tree = factory.createTreeFromFile("/ros2_ws/src/bt_example/tree/my_tree.xml");
+    // Register the ROS Action Node
+    RosNodeParams params;
+    params.nh = node;
+    params.default_port_value = "say_something"; // The action name
+    
+    factory.registerNodeType<SaySomethingAction>("SaySomethingAction", params);
 
-    // Create the Groot2 Publisher
-    // This will allow Groot2 to connect to this process
+    // Tree definition
+    const std::string xml_text = R"(
+    <root BTCPP_format="4">
+        <BehaviorTree ID="MainTree">
+            <Sequence>
+                <SaySomethingAction message="Calling Python logic from C++ BT!"/>
+                <SaySomethingAction message="Everything is working through ROS 2 Actions."/>
+            </Sequence>
+        </BehaviorTree>
+    </root>
+    )";
+
+    auto tree = factory.createTreeFromText(xml_text);
     Groot2Publisher publisher(tree);
 
-    std::cout << "--- Groot2 Real-time Monitoring Enabled ---" << std::endl;
-    std::cout << "1. Open Groot2" << std::endl;
-    std::cout << "2. Go to 'Monitor' tab" << std::endl;
-    std::cout << "3. Click 'Connect' (IP: 127.0.0.1, Port: 1667)" << std::endl;
-    std::cout << "------------------------------------------" << std::endl;
+    std::cout << "--- BT Node (Action Client) Started ---" << std::endl;
 
-    // Loop forever so we can monitor it
-    while (true)
+    while (rclcpp::ok())
     {
-        std::cout << "\nTicking tree..." << std::endl;
         tree.tickWhileRunning();
-        
-        std::this_thread::sleep_for(std::chrono::seconds(2));
+        rclcpp::spin_some(node);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
+    rclcpp::shutdown();
     return 0;
 }
