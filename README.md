@@ -1,44 +1,44 @@
-# BehaviorTree.CPP v4 for ROS 2 Jazzy (Docker Environment)
+# BehaviorTree.CPP v4 for ROS 2 Jazzy (Docker 開発環境)
 
-This repository provides a ready-to-use Docker environment for developing with **BehaviorTree.CPP v4** on **ROS 2 Jazzy**.
+このリポジトリは、**ROS 2 Jazzy** 上で **BehaviorTree.CPP v4** を使用するための Docker 開発環境を提供します。
 
-## Features
-- **ROS 2 Jazzy**: Built on the official `ros:jazzy-ros-base` image.
-- **BehaviorTree.CPP v4**: Pre-installed and ready to use.
-- **Persistent Workspace**: Build artifacts (`build`, `install`, `log`) are stored on the host machine via Docker volumes.
-- **Sample Package**: Includes a `bt_example` package to get you started.
+## 特徴
+- **ROS 2 Jazzy 対応**: 公式の `ros:jazzy-ros-base` イメージをベースに構築。
+- **BehaviorTree.CPP v4 標準搭載**: Jazzy 対応の最新版 (v4.9.0) がプリインストール済み。
+- **永続的なワークスペース**: ビルド成果物 (`build`, `install`, `log`) はホスト側に保存されるため、コンテナを消しても再ビルドは不要。
+- **サンプルパッケージ同梱**: すぐに動作確認ができる `bt_example` パッケージが含まれています。
 
-## Prerequisites
+## 動作要件
 - Docker
 - Docker Compose
 
-## Getting Started
+## クイックスタート
 
-### 1. Initial Setup & Build
-Run the following script to build the Docker image and compile the ROS 2 workspace inside the container:
+### 1. 初回セットアップ & ビルド
+以下のスクリプトを実行して、Docker イメージの作成と ROS 2 ワークスペースのビルドを行います。
 ```bash
 chmod +x setup_workspace.sh
 ./setup_workspace.sh
 ```
 
-### 2. Start the Development Environment
-To enter the container:
+### 2. 開発環境の起動
+コンテナ内に入るには、以下のコマンドを実行します。
 ```bash
 docker compose run --rm bt_dev
 ```
 
-### 3. Run the Example
-Inside the container, run the sample Behavior Tree node:
+### 3. サンプルの実行
+コンテナ内で、サンプルノードを起動して動作を確認します。
 ```bash
 ros2 run bt_example bt_node
 ```
 
-## Directory Structure
-- `src/`: ROS 2 source code (your packages go here).
-- `Dockerfile`: Container definition.
-- `docker-compose.yml`: Container orchestration and volume settings.
-- `setup_workspace.sh`: Utility script for building everything.
-- `build/`, `install/`, `log/`: Generated build files (persistent on host).
+## ディレクトリ構成
+- `src/`: ROS 2 のソースコード（自分のパッケージはここに追加します）
+- `Dockerfile`: コンテナの定義ファイル
+- `docker-compose.yml`: コンテナの起動設定・マウント設定
+- `setup_workspace.sh`: ビルド用のユーティリティスクリプト
+- `build/`, `install/`, `log/`: ビルド成果物（ホスト側に生成されます）
 
-## Why build inside Docker?
-Building inside the container ensures that you have the exact same dependencies and compiler versions regardless of which PC you are using. It prevents "it works on my machine" issues and keeps your host OS clean.
+## なぜ Docker 内でビルドするのか？
+コンテナ内でビルドを行うことで、どの PC を使っても**「全く同じコンパイラ、全く同じライブラリのバージョン」**で開発を行うことができます。これにより、OS の差異による「自分の環境では動くのに他の人の環境では動かない」といったトラブルを防ぎ、ホスト OS をクリーンに保つことができます。
