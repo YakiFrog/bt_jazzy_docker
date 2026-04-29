@@ -43,7 +43,7 @@ class ActionCreatorGUI(QWidget):
 
     def initUI(self):
         self.setWindowTitle("BT Action Scaffolder (PySide6)")
-        self.setMinimumSize(600, 700)
+        self.setMinimumSize(600, 750)
         self.setStyleSheet("""
             QWidget { background-color: #ffffff; color: #333333; font-family: 'Noto Sans CJK JP', 'Meiryo', sans-serif; }
             QLabel { color: #333333; background-color: transparent; }
@@ -52,32 +52,56 @@ class ActionCreatorGUI(QWidget):
             QPushButton#GenerateBtn { background-color: #28a745; color: #ffffff; font-weight: bold; border-radius: 4px; padding: 10px; }
             QPushButton#AddBtn { background-color: #007bff; color: #ffffff; border-radius: 4px; padding: 5px; }
             QFrame#Header { background-color: #24292e; }
-            QScrollArea { border: 1px solid #dddddd; background-color: #ffffff; }
+            QFrame#HelpBox { background-color: #fff9db; border: 1px solid #ffec99; border-radius: 8px; }
         """)
 
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
 
+        # ヘッダー
         header = QFrame()
         header.setObjectName("Header")
-        header.setFixedHeight(120)
+        header.setFixedHeight(80)
         h_layout = QVBoxLayout(header)
         title = QLabel("BT Action Scaffolder")
         title.setStyleSheet("color: white; font-size: 20px; font-weight: bold;")
         h_layout.addWidget(title, alignment=Qt.AlignCenter)
         layout.addWidget(header)
 
+        # メインコンテンツ
         content_frame = QFrame()
         c_layout = QVBoxLayout(content_frame)
         c_layout.setContentsMargins(30, 20, 30, 20)
 
-        c_layout.addWidget(QLabel("<b>Action Name (Class Name):</b>"))
+        # 使い方説明 (HelpBox)
+        help_box = QFrame()
+        help_box.setObjectName("HelpBox")
+        help_layout = QVBoxLayout(help_box)
+        help_title = QLabel("💡 使い方とルール")
+        help_title.setStyleSheet("font-weight: bold; color: #f08c00;")
+        help_layout.addWidget(help_title)
+        
+        usage_text = (
+            "1. <b>Action Name</b>: 'PascalCase'で入力（例: MoveRobot）\n"
+            "2. <b>Arguments</b>: 必要に応じて入力ポート（引数）を追加\n"
+            "3. <b>Generate</b>: 実行すると全ファイルが自動更新されます\n"
+            "4. <b>Build</b>: コンテナ内で <code>build</code> コマンドを実行\n"
+            "5. <b>Logic</b>: <code>action_server.py</code> に生成された関数を実装"
+        )
+        help_desc = QLabel(usage_text)
+        help_desc.setStyleSheet("font-size: 11px; line-height: 1.4;")
+        help_layout.addWidget(help_desc)
+        c_layout.addWidget(help_box)
+        c_layout.addSpacing(20)
+
+        # 入力フォーム
+        c_layout.addWidget(QLabel("<b>Action Name (PascalCase):</b>"))
         self.name_input = QLineEdit()
-        self.name_input.setPlaceholderText("e.g. CleanRoom")
+        self.name_input.setPlaceholderText("例: CleanRoom")
         c_layout.addWidget(self.name_input)
 
         c_layout.addSpacing(20)
-        c_layout.addWidget(QLabel("<b>Arguments (Ports):</b>"))
+        c_layout.addWidget(QLabel("<b>Arguments (Input Ports):</b>"))
         
         self.scroll = QScrollArea()
         self.scroll.setWidgetResizable(True)
@@ -92,11 +116,14 @@ class ActionCreatorGUI(QWidget):
 
         add_btn = QPushButton("+ Add Port")
         add_btn.setObjectName("AddBtn")
+        add_btn.setFixedWidth(120)
         add_btn.clicked.connect(self.addFieldRow)
         c_layout.addWidget(add_btn)
 
         c_layout.addSpacing(30)
-        self.gen_btn = QPushButton("GENERATE ACTION")
+        
+        # 生成ボタン
+        self.gen_btn = QPushButton("ファイルを生成・更新する")
         self.gen_btn.setObjectName("GenerateBtn")
         self.gen_btn.setFixedHeight(50)
         self.gen_btn.clicked.connect(self.generate)
@@ -109,15 +136,21 @@ class ActionCreatorGUI(QWidget):
         row = QWidget()
         r_layout = QHBoxLayout(row)
         r_layout.setContentsMargins(0, 0, 0, 0)
+
         name_in = QLineEdit()
+        name_in.setPlaceholderText("port_name")
         type_in = QComboBox()
         type_in.addItems(["float32", "int32", "string", "bool"])
+        
         del_btn = QPushButton("×")
         del_btn.setFixedWidth(30)
+        del_btn.setStyleSheet("color: red; font-weight: bold; border: none;")
         del_btn.clicked.connect(lambda: self.removeFieldRow(row))
+
         r_layout.addWidget(name_in)
         r_layout.addWidget(type_in)
         r_layout.addWidget(del_btn)
+        
         self.fields_layout.addWidget(row)
         self.field_rows.append((row, name_in, type_in))
 
@@ -130,21 +163,23 @@ class ActionCreatorGUI(QWidget):
 
     def generate(self):
         name = self.name_input.text().strip()
-        if not name: return
+        if not name:
+            QMessageBox.critical(self, "エラー", "Action Name を入力してください")
+            return
 
         fields = []
         for w, n, t in self.field_rows:
             f_name = n.text().strip()
-            if f_name: fields.append(f"{f_name}:{t.currentText()}")
+            if f_name:
+                fields.append(f"{f_name}:{t.currentText()}")
 
         try:
             self.create_action_files(name, fields)
-            QMessageBox.information(self, "Success", f"Action '{name}' created!")
+            QMessageBox.information(self, "成功", f"アクション '{name}' の生成が完了しました！\n\n1. コンテナ内で 'build' を実行\n2. action_server.py を編集\n3. XMLで動作を確認")
         except Exception as e:
-            QMessageBox.critical(self, "Error", str(e))
+            QMessageBox.critical(self, "エラー", str(e))
 
     def create_action_files(self, name, fields):
-        # snake_case name for files and internal ROS names
         snake_name = camel_to_snake(name)
 
         # 1. .action
@@ -166,6 +201,7 @@ class ActionCreatorGUI(QWidget):
         
         cb_content = f"""    def {snake_name}_callback(self, goal_handle):
         self.get_logger().info('{name} started')
+        # TODO: 具体的なロジックをここに実装
         goal_handle.succeed()
         return {name}.Result(success=True)
 
