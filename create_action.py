@@ -30,12 +30,14 @@ class ActionCreatorGUI(QWidget):
         self.setWindowTitle("BT Action Scaffolder (PySide6)")
         self.setMinimumSize(600, 700)
         self.setStyleSheet("""
-            QWidget { background-color: #f0f2f5; font-family: 'Segoe UI', 'Meiryo', sans-serif; }
-            QLabel { color: #1c1e21; }
-            QLineEdit { padding: 8px; border: 1px solid #ddd; border-radius: 4px; background: white; }
-            QPushButton#GenerateBtn { background-color: #28a745; color: white; font-weight: bold; border-radius: 4px; padding: 10px; }
-            QPushButton#AddBtn { background-color: #007bff; color: white; border-radius: 4px; padding: 5px; }
+            QWidget { background-color: #ffffff; color: #333333; font-family: 'Noto Sans CJK JP', 'Meiryo', sans-serif; }
+            QLabel { color: #333333; background-color: transparent; }
+            QLineEdit { padding: 8px; border: 1px solid #cccccc; border-radius: 4px; background-color: #fcfcfc; color: #000000; }
+            QComboBox { padding: 5px; border: 1px solid #cccccc; border-radius: 4px; background-color: #fcfcfc; color: #000000; }
+            QPushButton#GenerateBtn { background-color: #28a745; color: #ffffff; font-weight: bold; border-radius: 4px; padding: 10px; }
+            QPushButton#AddBtn { background-color: #007bff; color: #ffffff; border-radius: 4px; padding: 5px; }
             QFrame#Header { background-color: #24292e; }
+            QScrollArea { border: 1px solid #dddddd; background-color: #ffffff; }
         """)
 
         layout = QVBoxLayout()
