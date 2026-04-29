@@ -42,6 +42,9 @@ ros2 run bt_example bt_node
     - Groot2 の **Monitor** タブを選択。
     - **Connect** ボタンをクリック（IP: `127.0.0.1`, Port: `1667`）。
 
+## コードの解説
+サンプルコードの詳しい解説は、[docs/SAMPLE_CODE.md](docs/SAMPLE_CODE.md) を参照してください。
+
 ## ディレクトリ構成
 - `src/`: ROS 2 のソースコード（自分のパッケージはここに追加します）
 - `Dockerfile`: コンテナの定義ファイル
