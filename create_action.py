@@ -4,7 +4,7 @@ import sys
 import re
 from PySide6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
                              QLabel, QLineEdit, QPushButton, QComboBox, 
-                             QScrollArea, QFrame, QMessageBox)
+                             QScrollArea, QFrame, QMessageBox, QCheckBox)
 from PySide6.QtCore import Qt
 
 def camel_to_snake(name):
@@ -43,7 +43,7 @@ class ActionCreatorGUI(QWidget):
 
     def initUI(self):
         self.setWindowTitle("BT Action Scaffolder (PySide6)")
-        self.setMinimumSize(600, 750)
+        self.setMinimumSize(600, 800)
         self.setStyleSheet("""
             QWidget { background-color: #ffffff; color: #333333; font-family: 'Noto Sans CJK JP', 'Meiryo', sans-serif; }
             QLabel { color: #333333; background-color: transparent; }
@@ -79,11 +79,8 @@ class ActionCreatorGUI(QWidget):
         help_layout.addWidget(help_title)
         
         usage_text = (
-            "1. <b>Action Name</b>: 'PascalCase'で入力（例: MoveRobot）\n"
-            "2. <b>Arguments</b>: 必要に応じて入力ポート（引数）を追加\n"
-            "3. <b>Generate</b>: 実行すると全ファイルが自動更新されます\n"
-            "4. <b>Groot2</b>: 生成後、Groot2のPaletteに自動で追加されます\n"
-            "5. <b>Build/Logic</b>: コンテナ内でbuildし、Python側を実装"
+            "・<b>全自動生成</b>: Action作成からC++/Python/Palette登録まで一括で行います。\n"
+            "・<b>Paletteのみ更新</b>: 下のチェックを入れると、既存アクションをGroot2に登録するだけ（コード変更なし）が可能です。"
         )
         help_desc = QLabel(usage_text)
         help_desc.setWordWrap(True)
@@ -117,9 +114,16 @@ class ActionCreatorGUI(QWidget):
         add_btn.clicked.connect(self.addFieldRow)
         c_layout.addWidget(add_btn)
 
-        c_layout.addSpacing(30)
+        c_layout.addSpacing(20)
         
-        self.gen_btn = QPushButton("ファイルを生成・更新する")
+        # パレットのみチェックボックス
+        self.palette_only_cb = QCheckBox("Groot2のパレット更新のみ行う (コード生成をスキップ)")
+        self.palette_only_cb.setStyleSheet("font-weight: bold; color: #007bff;")
+        c_layout.addWidget(self.palette_only_cb)
+
+        c_layout.addSpacing(10)
+        
+        self.gen_btn = QPushButton("実行する")
         self.gen_btn.setObjectName("GenerateBtn")
         self.gen_btn.setFixedHeight(50)
         self.gen_btn.clicked.connect(self.generate)
@@ -166,10 +170,30 @@ class ActionCreatorGUI(QWidget):
                 fields.append(f"{f_name}:{t.currentText()}")
 
         try:
-            self.create_action_files(name, fields)
-            QMessageBox.information(self, "成功", f"アクション '{name}' の生成が完了しました！\n\nGroot2のPaletteが更新されました。")
+            if self.palette_only_cb.isChecked():
+                self.update_palette_only(name, fields)
+                QMessageBox.information(self, "成功", f"パレットに '{name}' を追加しました。")
+            else:
+                self.create_action_files(name, fields)
+                QMessageBox.information(self, "成功", f"アクション '{name}' の全生成が完了しました！")
         except Exception as e:
             QMessageBox.critical(self, "エラー", str(e))
+
+    def update_palette_only(self, name, fields):
+        palette_path = "src/bt_example/tree/nodes_library.xml"
+        os.makedirs(os.path.dirname(palette_path), exist_ok=True)
+        cpp_types = {"float32": "float", "int32": "int", "string": "std::string", "bool": "bool"}
+        
+        port_xml = ""
+        for fld in fields:
+            fname, ftype = fld.split(':')
+            cpp_t = cpp_types[ftype]
+            port_xml += f'            <input_port name="{fname}" type="{cpp_t}"/>\n'
+            
+        node_xml = f"""        <Action ID="{name}">
+{port_xml}        </Action>
+"""
+        add_to_file_after_marker(palette_path, node_xml, "<TreeNodesModel>")
 
     def create_action_files(self, name, fields):
         snake_name = camel_to_snake(name)
@@ -232,20 +256,8 @@ public:
         add_to_file_after_marker(cpp_path, class_content, "using namespace BT;")
         add_to_file_after_marker(cpp_path, f'    params.default_port_value = "{snake_name}";\n    factory.registerNodeType<{name}Action>("{name}", params);\n\n', "BehaviorTreeFactory factory;")
 
-        # 5. Groot2 Palette (nodes_library.xml)
-        palette_path = "src/bt_example/tree/nodes_library.xml"
-        os.makedirs(os.path.dirname(palette_path), exist_ok=True)
-        
-        port_xml = ""
-        for fld in fields:
-            fname, ftype = fld.split(':')
-            cpp_t = cpp_types[ftype]
-            port_xml += f'            <input_port name="{fname}" type="{cpp_t}"/>\n'
-            
-        node_xml = f"""        <Action ID="{name}">
-{port_xml}        </Action>
-"""
-        add_to_file_after_marker(palette_path, node_xml, "<TreeNodesModel>")
+        # 5. Palette Update
+        self.update_palette_only(name, fields)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
