@@ -122,12 +122,19 @@ graph LR
 ./create_action.py CleanRoom room_id:int32
 ```
 
-このコマンド一つで、以下のすべてが自動で行われます：
-1. `CleanRoom.action` の作成と CMake への登録
-2. `action_server.py` へのロジック雛形の追加
-3. `main.cpp` への BT ノード定義と Factory 登録の追加
+このコマンド（または GUI）一つで、以下のすべてが自動で行われます：
 
-実行後は、`build` して `src` すれば、すぐに `my_tree.xml` で `<CleanRoom room_id="1"/>` と書いて使い始めることができます。
+### 自動化される範囲
+- **通信**: `{ActionName}.action` の作成と `CMakeLists.txt` への登録。
+- **Python**: `action_server.py` への import 追加、サーバー初期化、**コールバック関数の雛形作成**。
+- **C++**: `main.cpp` へのヘッダ追加、**BTノードクラスの定義**、**Factory への登録**。
+
+### 手動で行うこと
+1. **ロジックの実装**: `action_server.py` に生成された関数内（`# TODO` 部分）に具体的な処理を書く。
+2. **ビルド**: コンテナ内で `build` コマンドを実行。
+3. **ツリー設計**: `my_tree.xml` に新しいノードを配置。
+
+実行後は、すぐに `my_tree.xml` で `<ActionName arg="value"/>` と書いて使い始めることができます。
 
 ## 開発ワークフロー (標準的な流れ)
 本環境では、以下のサイクルで開発を進めるのが最も効率的です。
