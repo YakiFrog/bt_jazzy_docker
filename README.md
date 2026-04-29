@@ -114,6 +114,21 @@ graph LR
 - `setup_workspace.sh`: ビルド用のユーティリティスクリプト
 - `build/`, `install/`, `log/`: ビルド成果物（ホスト側に生成されます）
 
+## 新しいアクションの高速開発 (`create_action.py`)
+新しい動作を追加する際のボイラープレートを自動生成するツールを用意しました。
+
+```bash
+# 使用例: 「掃除」アクション (引数 room_id) を追加
+./create_action.py CleanRoom room_id:int32
+```
+
+このコマンド一つで、以下のすべてが自動で行われます：
+1. `CleanRoom.action` の作成と CMake への登録
+2. `action_server.py` へのロジック雛形の追加
+3. `main.cpp` への BT ノード定義と Factory 登録の追加
+
+実行後は、`build` して `src` すれば、すぐに `my_tree.xml` で `<CleanRoom room_id="1"/>` と書いて使い始めることができます。
+
 ## 開発ワークフロー (標準的な流れ)
 本環境では、以下のサイクルで開発を進めるのが最も効率的です。
 
