@@ -35,14 +35,15 @@ ros2 run bt_example bt_node
 
 ## Tips: 複数のターミナルを開く方法
 Action Server と BT ノードを同時に動かす場合など、複数のターミナルでコンテナに入る必要があります。
+ホスト側の `.bashrc` に便利なエイリアスを設定済みです。
 
-1. **1つ目のターミナル**: 
+1. **1つ目のターミナル (起動)**: 
    ```bash
-   docker compose run --rm bt_dev
+   bt_start
    ```
-2. **2つ目以降のターミナル** (コンテナが起動している状態で実行):
+2. **2つ目以降のターミナル (追加)**:
    ```bash
-   docker exec -it bt_dev_container bash
+   bt_enter
    ```
 
 ## コンテナの終了方法
