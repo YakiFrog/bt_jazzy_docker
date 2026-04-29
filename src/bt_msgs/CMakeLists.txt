@@ -8,6 +8,7 @@ find_package(action_msgs REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "action/SaySomething.action"
   "action/MoveToTarget.action"
+  "action/PickUpItem.action"
   DEPENDENCIES action_msgs
 )
 

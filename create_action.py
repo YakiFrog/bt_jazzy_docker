@@ -139,11 +139,13 @@ class ActionCreatorGUI(QWidget):
             QMessageBox.critical(self, "Error", str(e))
 
     def create_action_files(self, name, fields):
-        # 1. .action
+        # 1. .action (FIXED: Type then Name)
         os.makedirs("src/bt_msgs/action", exist_ok=True)
         with open(f"src/bt_msgs/action/{name}.action", 'w') as f:
             f.write("# Request\n")
-            for fld in fields: f.write(f"{fld.replace(':', ' ')}\n")
+            for fld in fields:
+                fname, ftype = fld.split(':')
+                f.write(f"{ftype} {fname}\n")
             f.write("---\n# Result\nbool success\n---\n# Feedback\nfloat32 progress\n")
 
         # 2. CMake
