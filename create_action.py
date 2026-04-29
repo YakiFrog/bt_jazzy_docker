@@ -58,7 +58,6 @@ class ActionCreatorGUI(QWidget):
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
 
-        # ヘッダー
         header = QFrame()
         header.setObjectName("Header")
         header.setFixedHeight(80)
@@ -68,12 +67,10 @@ class ActionCreatorGUI(QWidget):
         h_layout.addWidget(title, alignment=Qt.AlignCenter)
         layout.addWidget(header)
 
-        # メインコンテンツ
         content_frame = QFrame()
         c_layout = QVBoxLayout(content_frame)
         c_layout.setContentsMargins(30, 20, 30, 20)
 
-        # 使い方説明 (HelpBox)
         help_box = QFrame()
         help_box.setObjectName("HelpBox")
         help_layout = QVBoxLayout(help_box)
@@ -85,8 +82,8 @@ class ActionCreatorGUI(QWidget):
             "1. <b>Action Name</b>: 'PascalCase'で入力（例: MoveRobot）\n"
             "2. <b>Arguments</b>: 必要に応じて入力ポート（引数）を追加\n"
             "3. <b>Generate</b>: 実行すると全ファイルが自動更新されます\n"
-            "4. <b>Build</b>: コンテナ内で <code>build</code> コマンドを実行\n"
-            "5. <b>Logic</b>: <code>action_server.py</code> に生成された関数を実装"
+            "4. <b>Groot2</b>: 生成後、Groot2のPaletteに自動で追加されます\n"
+            "5. <b>Build/Logic</b>: コンテナ内でbuildし、Python側を実装"
         )
         help_desc = QLabel(usage_text)
         help_desc.setWordWrap(True)
@@ -95,7 +92,6 @@ class ActionCreatorGUI(QWidget):
         c_layout.addWidget(help_box)
         c_layout.addSpacing(20)
 
-        # 入力フォーム
         c_layout.addWidget(QLabel("<b>Action Name (PascalCase):</b>"))
         self.name_input = QLineEdit()
         self.name_input.setPlaceholderText("例: CleanRoom")
@@ -123,7 +119,6 @@ class ActionCreatorGUI(QWidget):
 
         c_layout.addSpacing(30)
         
-        # 生成ボタン
         self.gen_btn = QPushButton("ファイルを生成・更新する")
         self.gen_btn.setObjectName("GenerateBtn")
         self.gen_btn.setFixedHeight(50)
@@ -137,21 +132,17 @@ class ActionCreatorGUI(QWidget):
         row = QWidget()
         r_layout = QHBoxLayout(row)
         r_layout.setContentsMargins(0, 0, 0, 0)
-
         name_in = QLineEdit()
         name_in.setPlaceholderText("port_name")
         type_in = QComboBox()
         type_in.addItems(["float32", "int32", "string", "bool"])
-        
         del_btn = QPushButton("×")
         del_btn.setFixedWidth(30)
         del_btn.setStyleSheet("color: red; font-weight: bold; border: none;")
         del_btn.clicked.connect(lambda: self.removeFieldRow(row))
-
         r_layout.addWidget(name_in)
         r_layout.addWidget(type_in)
         r_layout.addWidget(del_btn)
-        
         self.fields_layout.addWidget(row)
         self.field_rows.append((row, name_in, type_in))
 
@@ -176,7 +167,7 @@ class ActionCreatorGUI(QWidget):
 
         try:
             self.create_action_files(name, fields)
-            QMessageBox.information(self, "成功", f"アクション '{name}' の生成が完了しました！\n\n1. コンテナ内で 'build' を実行\n2. action_server.py を編集\n3. XMLで動作を確認")
+            QMessageBox.information(self, "成功", f"アクション '{name}' の生成が完了しました！\n\nGroot2のPaletteが更新されました。")
         except Exception as e:
             QMessageBox.critical(self, "エラー", str(e))
 
@@ -240,6 +231,21 @@ public:
 """
         add_to_file_after_marker(cpp_path, class_content, "using namespace BT;")
         add_to_file_after_marker(cpp_path, f'    params.default_port_value = "{snake_name}";\n    factory.registerNodeType<{name}Action>("{name}", params);\n\n', "BehaviorTreeFactory factory;")
+
+        # 5. Groot2 Palette (nodes_library.xml)
+        palette_path = "src/bt_example/tree/nodes_library.xml"
+        os.makedirs(os.path.dirname(palette_path), exist_ok=True)
+        
+        port_xml = ""
+        for fld in fields:
+            fname, ftype = fld.split(':')
+            cpp_t = cpp_types[ftype]
+            port_xml += f'            <input_port name="{fname}" type="{cpp_t}"/>\n'
+            
+        node_xml = f"""        <Action ID="{name}">
+{port_xml}        </Action>
+"""
+        add_to_file_after_marker(palette_path, node_xml, "<TreeNodesModel>")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
