@@ -13,6 +13,7 @@ fi
 # サンプル実行用
 alias run_logic='ros2 run bt_python_logic action_server'
 alias run_bt='ros2 run bt_example bt_node'
+alias create_action='/ros2_ws/create_action.py'
 
 # 便利設定
 export RCUTILS_COLORIZED_OUTPUT=1
