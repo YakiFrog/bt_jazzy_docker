@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 import os
 import sys
+import re
 from PySide6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
                              QLabel, QLineEdit, QPushButton, QComboBox, 
                              QScrollArea, QFrame, QMessageBox)
 from PySide6.QtCore import Qt
+
+def camel_to_snake(name):
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 def add_to_file_after_marker(file_path, content, marker):
     if not os.path.exists(file_path):
@@ -139,7 +144,10 @@ class ActionCreatorGUI(QWidget):
             QMessageBox.critical(self, "Error", str(e))
 
     def create_action_files(self, name, fields):
-        # 1. .action (FIXED: Type then Name)
+        # snake_case name for files and internal ROS names
+        snake_name = camel_to_snake(name)
+
+        # 1. .action
         os.makedirs("src/bt_msgs/action", exist_ok=True)
         with open(f"src/bt_msgs/action/{name}.action", 'w') as f:
             f.write("# Request\n")
@@ -154,9 +162,9 @@ class ActionCreatorGUI(QWidget):
         # 3. Python
         py_path = "src/bt_python_logic/bt_python_logic/action_server.py"
         add_to_import_line(py_path, name, "from bt_msgs.action import")
-        add_to_file_after_marker(py_path, f"        self._{name.lower()}_server = ActionServer(self, {name}, '{name.lower()}', self.{name.lower()}_callback)\n", "def __init__(self):")
+        add_to_file_after_marker(py_path, f"        self._{snake_name}_server = ActionServer(self, {name}, '{snake_name}', self.{snake_name}_callback)\n", "def __init__(self):")
         
-        cb_content = f"""    def {name.lower()}_callback(self, goal_handle):
+        cb_content = f"""    def {snake_name}_callback(self, goal_handle):
         self.get_logger().info('{name} started')
         goal_handle.succeed()
         return {name}.Result(success=True)
@@ -166,7 +174,7 @@ class ActionCreatorGUI(QWidget):
 
         # 4. C++
         cpp_path = "src/bt_example/src/main.cpp"
-        add_to_file_after_marker(cpp_path, f'#include <bt_msgs/action/{name.lower()}.hpp>\n', "#include <rclcpp/rclcpp.hpp>")
+        add_to_file_after_marker(cpp_path, f'#include <bt_msgs/action/{snake_name}.hpp>\n', "#include <rclcpp/rclcpp.hpp>")
         
         cpp_types = {"float32": "float", "int32": "int", "string": "std::string", "bool": "bool"}
         ports = ", ".join([f'InputPort<{cpp_types[f.split(":")[1]]}>("{f.split(":")[0]}")' for f in fields])
@@ -194,7 +202,7 @@ public:
 
 """
         add_to_file_after_marker(cpp_path, class_content, "using namespace BT;")
-        add_to_file_after_marker(cpp_path, f'    params.default_port_value = "{name.lower()}";\n    factory.registerNodeType<{name}Action>("{name}", params);\n\n', "BehaviorTreeFactory factory;")
+        add_to_file_after_marker(cpp_path, f'    params.default_port_value = "{snake_name}";\n    factory.registerNodeType<{name}Action>("{name}", params);\n\n', "BehaviorTreeFactory factory;")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

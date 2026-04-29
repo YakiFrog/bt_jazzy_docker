@@ -6,8 +6,29 @@
 #include <bt_msgs/action/move_to_target.hpp>
 #include <bt_msgs/action/pick_up_item.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <bt_msgs/action/clean_room.hpp>
 
 using namespace BT;
+class CleanRoomAction : public RosActionNode<bt_msgs::action::CleanRoom>
+{
+public:
+    CleanRoomAction(const std::string& name, const NodeConfig& conf, const RosNodeParams& params)
+      : RosActionNode<bt_msgs::action::CleanRoom>(name, conf, params) {}
+
+    static PortsList providedPorts() {
+        return providedBasicPorts({ InputPort<std::string>("whichroom") });
+    }
+
+    bool setGoal(Goal& goal) override {
+        getInput("whichroom", goal.whichroom);
+        return true;
+    }
+
+    NodeStatus onResultReceived(const WrappedResult& wr) override {
+        return wr.result->success ? NodeStatus::SUCCESS : NodeStatus::FAILURE;
+    }
+};
+
 
 class PickUpItemAction : public RosActionNode<bt_msgs::action::PickUpItem>
 {
@@ -96,6 +117,9 @@ int main(int argc, char** argv)
     auto node = std::make_shared<rclcpp::Node>("bt_node_client");
 
     BehaviorTreeFactory factory;
+    params.default_port_value = "cleanroom";
+    factory.registerNodeType<CleanRoomAction>("CleanRoom", params);
+
     RosNodeParams params;
     params.nh = node;
 
