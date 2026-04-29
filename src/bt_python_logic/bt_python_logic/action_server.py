@@ -3,9 +3,14 @@ import math
 import rclpy
 from rclpy.action import ActionServer
 from rclpy.node import Node
-from bt_msgs.action import SaySomething, MoveToTarget, PickUpItem
+from bt_msgs.action import SaySomething, MoveToTarget, PickUpItem, CleanRoom
 
 class MultiActionServer(Node):
+    def cleanroom_callback(self, goal_handle):
+        self.get_logger().info('CleanRoom started')
+        goal_handle.succeed()
+        return CleanRoom.Result(success=True)
+
     """
     複数のアクションに対応したロジックサーバー
     """
@@ -15,6 +20,7 @@ class MultiActionServer(Node):
         return PickUpItem.Result(success=True)
 
     def __init__(self):
+        self._cleanroom_server = ActionServer(self, CleanRoom, 'cleanroom', self.cleanroom_callback)
         super().__init__('multi_action_server')
         self._pickupitem_server = ActionServer(self, PickUpItem, 'pickupitem', self.pickupitem_callback)
         
