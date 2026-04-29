@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 import os
-import tkinter as tk
-from tkinter import messagebox, ttk
+import sys
+from PySide6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
+                             QLabel, QLineEdit, QPushButton, QComboBox, 
+                             QScrollArea, QFrame, QMessageBox)
+from PySide6.QtCore import Qt
 
 def add_to_file_before_marker(file_path, content, marker):
     if not os.path.exists(file_path):
@@ -18,97 +21,139 @@ def add_to_file_before_marker(file_path, content, marker):
                 f.write(content)
             f.write(line)
 
-class ActionCreatorGUI:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("BT Action Scaffolder v2")
-        self.root.geometry("600x700")
-        self.root.configure(bg="#f5f5f5")
+class ActionCreatorGUI(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
 
-        # タイトルと説明
-        header = tk.Frame(root, bg="#2c3e50", height=100)
-        header.pack(fill=tk.X)
-        tk.Label(header, text="Behavior Tree Action Scaffolder", bg="#2c3e50", fg="white", font=('Arial', 16, 'bold')).pack(pady=10)
+    def initUI(self):
+        self.setWindowTitle("BT Action Scaffolder (PySide6)")
+        self.setMinimumSize(600, 700)
+        self.setStyleSheet("""
+            QWidget { background-color: #f0f2f5; font-family: 'Segoe UI', 'Meiryo', sans-serif; }
+            QLabel { color: #1c1e21; }
+            QLineEdit { padding: 8px; border: 1px solid #ddd; border-radius: 4px; background: white; }
+            QPushButton#GenerateBtn { background-color: #28a745; color: white; font-weight: bold; border-radius: 4px; padding: 10px; }
+            QPushButton#AddBtn { background-color: #007bff; color: white; border-radius: 4px; padding: 5px; }
+            QFrame#Header { background-color: #24292e; }
+        """)
+
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        # ヘッダー
+        header = QFrame()
+        header.setObjectName("Header")
+        header.setFixedHeight(120)
+        h_layout = QVBoxLayout(header)
+        title = QLabel("BT Action Scaffolder")
+        title.setStyleSheet("color: white; font-size: 20px; font-weight: bold;")
+        h_layout.addWidget(title, alignment=Qt.AlignCenter)
         
-        info_text = "【自動化の範囲】\n1. .action作成  2. CMake登録  3. Pythonサーバー雛形  4. C++ノード実装・登録"
-        tk.Label(header, text=info_text, bg="#2c3e50", fg="#bdc3c7", font=('Arial', 9)).pack(pady=5)
+        info = QLabel("【自動化】 .action作成 / CMake / Pythonサーバー / C++ノード実装・登録")
+        info.setStyleSheet("color: #959da5; font-size: 12px;")
+        h_layout.addWidget(info, alignment=Qt.AlignCenter)
+        layout.addWidget(header)
 
-        main_frame = tk.Frame(root, bg="#f5f5f5", padx=20, pady=20)
-        main_frame.pack(fill=tk.BOTH, expand=True)
+        # メインコンテンツ
+        content_frame = QFrame()
+        c_layout = QVBoxLayout(content_frame)
+        c_layout.setContentsMargins(30, 20, 30, 20)
 
         # アクション名
-        tk.Label(main_frame, text="Action Name:", bg="#f5f5f5", font=('Arial', 10, 'bold')).pack(anchor=tk.W)
-        self.name_entry = tk.Entry(main_frame, font=('Arial', 12), width=40)
-        self.name_entry.pack(pady=10)
-        self.name_entry.insert(0, "MyNewTask")
+        c_layout.addWidget(QLabel("<b>Action Name (クラス名になります):</b>"))
+        self.name_input = QLineEdit()
+        self.name_input.setPlaceholderText("例: MoveRobot, PickupItem...")
+        c_layout.addWidget(self.name_input)
 
-        # フィールド一覧
-        tk.Label(main_frame, text="Arguments (Ports):", bg="#f5f5f5", font=('Arial', 10, 'bold')).pack(anchor=tk.W, pady=(10,0))
+        # フィールドセクション
+        c_layout.addSpacing(20)
+        c_layout.addWidget(QLabel("<b>Arguments (入力ポート):</b>"))
         
-        # スクロール可能なフィールドエリア
-        self.canvas = tk.Canvas(main_frame, bg="#f5f5f5", highlightthickness=0)
-        self.scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=self.canvas.yview)
-        self.scrollable_frame = tk.Frame(self.canvas, bg="#f5f5f5")
-
-        self.scrollable_frame.bind(
-            "<Configure>",
-            lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-        )
-
-        self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
-        self.canvas.configure(yscrollcommand=self.scrollbar.set)
-
-        self.canvas.pack(side="left", fill="both", expand=True)
-        self.scrollbar.pack(side="right", fill="y")
+        self.scroll = QScrollArea()
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setStyleSheet("background: white; border: 1px solid #ddd; border-radius: 4px;")
         
+        self.fields_container = QWidget()
+        self.fields_layout = QVBoxLayout(self.fields_container)
+        self.fields_layout.setAlignment(Qt.AlignTop)
+        self.scroll.setWidget(self.fields_container)
+        c_layout.addWidget(self.scroll)
+
         self.field_rows = []
-        self.add_field_row()
+        self.addFieldRow()
 
-        btn_frame = tk.Frame(root, bg="#f5f5f5", pady=20)
-        btn_frame.pack(fill=tk.X)
-        
-        tk.Button(btn_frame, text="+ Add Port", command=self.add_field_row, bg="#3498db", fg="white", font=('Arial', 10)).pack(side=tk.LEFT, padx=50)
-        tk.Button(btn_frame, text="GENERATE", command=self.generate, bg="#27ae60", fg="white", font=('Arial', 12, 'bold'), width=15).pack(side=tk.RIGHT, padx=50)
+        add_btn = QPushButton("+ Add Port")
+        add_btn.setObjectName("AddBtn")
+        add_btn.setFixedWidth(100)
+        add_btn.clicked.connect(self.addFieldRow)
+        c_layout.addWidget(add_btn)
 
-        # 下部の注意書き
-        footer = tk.Label(root, text="※ 生成後は 'build' を実行し、Python側のcallbackを実装してください", bg="#f5f5f5", fg="#7f8c8d", font=('Arial', 8, 'italic'))
-        footer.pack(side=tk.BOTTOM, pady=10)
+        c_layout.addSpacing(30)
+        
+        # 生成ボタン
+        self.gen_btn = QPushButton("GENERATE ACTION")
+        self.gen_btn.setObjectName("GenerateBtn")
+        self.gen_btn.setFixedHeight(50)
+        self.gen_btn.clicked.connect(self.generate)
+        c_layout.addWidget(self.gen_btn)
 
-    def add_field_row(self):
-        row = tk.Frame(self.scrollable_frame, bg="#f5f5f5")
-        row.pack(pady=5, fill=tk.X)
+        footer = QLabel("※ 生成後は 'build' を実行し、Python側のcallbackを実装してください")
+        footer.setStyleSheet("color: #6a737d; font-style: italic; font-size: 11px;")
+        c_layout.addWidget(footer, alignment=Qt.AlignCenter)
+
+        layout.addWidget(content_frame)
+        self.setLayout(layout)
+
+    def addFieldRow(self):
+        row = QWidget()
+        r_layout = QHBoxLayout(row)
+        r_layout.setContentsMargins(0, 0, 0, 0)
+
+        name_in = QLineEdit()
+        name_in.setPlaceholderText("port_name")
+        type_in = QComboBox()
+        type_in.addItems(["float32", "int32", "string", "bool"])
         
-        tk.Label(row, text="Name:", bg="#f5f5f5").pack(side=tk.LEFT)
-        name_ent = tk.Entry(row, width=15)
-        name_ent.pack(side=tk.LEFT, padx=5)
+        del_btn = QPushButton("×")
+        del_btn.setFixedWidth(30)
+        del_btn.setStyleSheet("color: red; font-weight: bold; border: none;")
+        del_btn.clicked.connect(lambda: self.removeFieldRow(row))
+
+        r_layout.addWidget(name_in)
+        r_layout.addWidget(type_in)
+        r_layout.addWidget(del_btn)
         
-        tk.Label(row, text="Type:", bg="#f5f5f5").pack(side=tk.LEFT, padx=(10,0))
-        type_var = tk.StringVar(value="float32")
-        type_opt = ttk.Combobox(row, textvariable=type_var, values=["float32", "int32", "string", "bool"], width=10)
-        type_opt.pack(side=tk.LEFT, padx=5)
-        
-        self.field_rows.append((name_ent, type_opt))
+        self.fields_layout.addWidget(row)
+        self.field_rows.append((row, name_in, type_in))
+
+    def removeFieldRow(self, row_widget):
+        for i, (w, n, t) in enumerate(self.field_rows):
+            if w == row_widget:
+                self.field_rows.pop(i)
+                row_widget.deleteLater()
+                break
 
     def generate(self):
-        name = self.name_entry.get().strip()
-        if not name or name == "MyNewTask":
-            messagebox.showerror("Error", "有効なアクション名を入力してください")
+        name = self.name_input.text().strip()
+        if not name:
+            QMessageBox.critical(self, "Error", "Action Name を入力してください")
             return
 
         fields = []
-        for n_ent, t_opt in self.field_rows:
-            f_name = n_ent.get().strip()
+        for w, n, t in self.field_rows:
+            f_name = n.text().strip()
             if f_name:
-                fields.append(f"{f_name}:{t_opt.get()}")
+                fields.append(f"{f_name}:{t.currentText()}")
 
         try:
             self.create_action_files(name, fields)
-            messagebox.showinfo("Success", f"アクション '{name}' の全ファイルを更新しました！\n\n1. コンテナ内で 'build' を実行\n2. Python側のコールバックを実装\n3. XMLで使用")
+            QMessageBox.information(self, "Success", f"アクション '{name}' の生成が完了しました！\n\n1. コンテナ内で 'build' を実行\n2. Python側のロジックを実装\n3. XMLで使用")
         except Exception as e:
-            messagebox.showerror("Error", str(e))
+            QMessageBox.critical(self, "Error", str(e))
 
     def create_action_files(self, name, fields):
-        # ロジックは同じ（省略せず実装を維持）
+        # 通信定義、CMake、Python、C++ の更新ロジック
         os.makedirs("src/bt_msgs/action", exist_ok=True)
         with open(f"src/bt_msgs/action/{name}.action", 'w') as f:
             f.write("# Request\n")
@@ -121,9 +166,10 @@ class ActionCreatorGUI:
         py_path = "src/bt_python_logic/bt_python_logic/action_server.py"
         add_to_file_before_marker(py_path, f", {name}", "from bt_msgs.action import")
         add_to_file_before_marker(py_path, f"        self._{name.lower()}_server = ActionServer(self, {name}, '{name.lower()}', self.{name.lower()}_callback)\n", "self.get_logger().info('Python ロジックサーバー")
+        
         cb_content = f"""    def {name.lower()}_callback(self, goal_handle):
         self.get_logger().info('{name} 実行開始')
-        # TODO: 具体的な処理を書く
+        # TODO: 具体的なロジックをここに実装
         goal_handle.succeed()
         return {name}.Result(success=True)
 
@@ -134,6 +180,7 @@ class ActionCreatorGUI:
         add_to_file_before_marker(cpp_path, f'#include <bt_msgs/action/{name.lower()}.hpp>\n', "#include <rclcpp/rclcpp.hpp>")
         ports = ", ".join([f'InputPort<{f.split(":")[1].replace("32","")}>("{f.split(":")[0]}")' for f in fields])
         goal_sets = "\n        ".join([f'getInput("{f.split(":")[0]}", goal.{f.split(":")[0]});' for f in fields])
+        
         class_content = f"""class {name}Action : public RosActionNode<bt_msgs::action::{name}>
 {{
 public:
@@ -159,6 +206,7 @@ public:
         add_to_file_before_marker(cpp_path, f'    params.default_port_value = "{name.lower()}";\n    factory.registerNodeType<{name}Action>("{name}", params);\n\n', "auto tree =")
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = ActionCreatorGUI(root)
-    root.mainloop()
+    app = QApplication(sys.argv)
+    ex = ActionCreatorGUI()
+    ex.show()
+    sys.exit(app.exec())

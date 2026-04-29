@@ -15,7 +15,12 @@ RUN apt-get update && apt-get install -y \
     libncurses5-dev \
     libncursesw5-dev \
     python3-tk \
+    python3-pip \
+    libxcb-cursor0 \
     && rm -rf /var/lib/apt/lists/*
+
+# Install PySide6
+RUN pip3 install --break-system-packages PySide6
 
 # Create workspace
 WORKDIR /ros2_ws
