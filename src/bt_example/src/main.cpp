@@ -1,5 +1,8 @@
 #include <iostream>
 #include <behaviortree_cpp/bt_factory.h>
+#include <behaviortree_cpp/loggers/groot2_publisher.h> // Added for Groot2
+#include <thread>
+#include <chrono>
 
 using namespace BT;
 
@@ -24,6 +27,10 @@ public:
             throw RuntimeError("missing required input [message]");
         }
         std::cout << "Robot says: " << msg << std::endl;
+        
+        // Add a small delay so we can see the execution in Groot2
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        
         return NodeStatus::SUCCESS;
     }
 };
@@ -31,34 +38,29 @@ public:
 int main()
 {
     BehaviorTreeFactory factory;
-
-    // Register custom action
     factory.registerNodeType<SayHello>("SayHello");
 
-    // Define the tree structure in XML
-    const std::string xml_text = R"(
-     <root BTCPP_format="4">
-         <BehaviorTree ID="MainTree">
-            <Sequence name="root_sequence">
-                <SayHello message="Hello BehaviorTree.CPP v4!"/>
-                <SayHello message="This is running in ROS 2 Jazzy."/>
-            </Sequence>
-         </BehaviorTree>
-     </root>
-    )";
+    // Load from file for Groot2 visualization
+    auto tree = factory.createTreeFromFile("/ros2_ws/src/bt_example/tree/my_tree.xml");
 
-    // Create the tree
-    auto tree = factory.createTreeFromText(xml_text);
+    // Create the Groot2 Publisher
+    // This will allow Groot2 to connect to this process
+    Groot2Publisher publisher(tree);
 
-    // Execute the tree from text (already done)
-    std::cout << "--- Executing tree from text ---" << std::endl;
-    tree.tickWhileRunning();
+    std::cout << "--- Groot2 Real-time Monitoring Enabled ---" << std::endl;
+    std::cout << "1. Open Groot2" << std::endl;
+    std::cout << "2. Go to 'Monitor' tab" << std::endl;
+    std::cout << "3. Click 'Connect' (IP: 127.0.0.1, Port: 1667)" << std::endl;
+    std::cout << "------------------------------------------" << std::endl;
 
-    // Demonstrate loading from file
-    std::cout << "\n--- Executing tree from file ---" << std::endl;
-    // Note: In a real ROS 2 app, you'd use ament_index_cpp to find the file path
-    auto tree_from_file = factory.createTreeFromFile("/ros2_ws/src/bt_example/tree/my_tree.xml");
-    tree_from_file.tickWhileRunning();
+    // Loop forever so we can monitor it
+    while (true)
+    {
+        std::cout << "\nTicking tree..." << std::endl;
+        tree.tickWhileRunning();
+        
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+    }
 
     return 0;
 }
