@@ -84,22 +84,10 @@ int main(int argc, char** argv)
     params.default_port_value = "move_to_target";
     factory.registerNodeType<MoveToTargetAction>("MoveToTarget", params);
 
-    // 複雑なツリーの定義 (Sequence を使用)
-    const std::string xml_text = R"(
-    <root BTCPP_format="4">
-        <BehaviorTree ID="MainTree">
-            <Sequence>
-                <SaySomething message="ミッションを開始します。まずは (5, 5) へ移動します。"/>
-                <MoveToTarget x="5.0" y="5.0"/>
-                <SaySomething message="到着しました。次は (10, -2) へ移動します。"/>
-                <MoveToTarget x="10.0" y="-2.0"/>
-                <SaySomething message="すべてのミッションが完了しました！"/>
-            </Sequence>
-        </BehaviorTree>
-    </root>
-    )";
-
-    auto tree = factory.createTreeFromText(xml_text);
+    // XML ファイルからツリーを読み込む
+    // コンテナ内の絶対パスを指定します
+    auto tree = factory.createTreeFromFile("/ros2_ws/src/bt_example/tree/my_tree.xml");
+    
     Groot2Publisher publisher(tree);
 
     std::cout << "--- BT Mission Started ---" << std::endl;

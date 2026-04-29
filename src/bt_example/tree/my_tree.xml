@@ -1,8 +1,11 @@
- <root BTCPP_format="4">
-     <BehaviorTree ID="MainTree">
-        <Sequence name="root_sequence">
-            <SayHello message="Hello from XML file!"/>
-            <SayHello message="BehaviorTree.CPP v4 is powerful."/>
+<root BTCPP_format="4">
+    <BehaviorTree ID="MainTree">
+        <Sequence>
+            <SaySomething message="XMLファイルからミッションを開始します。(3, 3)へ移動！"/>
+            <MoveToTarget x="3.0" y="3.0"/>
+            <SaySomething message="到着。次は (-2, 4) へ。"/>
+            <MoveToTarget x="-2.0" y="4.0"/>
+            <SaySomething message="すべての目標地点を回りました。ミッション終了。"/>
         </Sequence>
-     </BehaviorTree>
- </root>
+    </BehaviorTree>
+</root>
