@@ -9,4 +9,8 @@ if [ -f "/ros2_ws/install/setup.bash" ]; then
     source "/ros2_ws/install/setup.bash"
 fi
 
+if [ -f "/ros2_ws/.bashrc_docker" ]; then
+    source "/ros2_ws/.bashrc_docker"
+fi
+
 exec "$@"

@@ -1,0 +1,14 @@
+# Behavior Tree Docker Container 用のエイリアス設定
+
+# 基本コマンド
+alias build='colcon build --symlink-install'
+alias src='source install/setup.bash'
+
+# サンプル実行用
+alias run_logic='ros2 run bt_python_logic action_server'
+alias run_bt='ros2 run bt_example bt_node'
+
+# 便利設定
+export RCUTILS_COLORIZED_OUTPUT=1
+echo "--- BT Dev Environment Loaded ---"
+echo "Available aliases: build, src, run_logic, run_bt"
