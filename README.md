@@ -33,6 +33,22 @@ docker compose run --rm bt_dev
 ros2 run bt_example bt_node
 ```
 
+## Tips: 複数のターミナルを開く方法
+Action Server と BT ノードを同時に動かす場合など、複数のターミナルでコンテナに入る必要があります。
+
+1. **1つ目のターミナル**: 
+   ```bash
+   docker compose run --rm bt_dev
+   ```
+2. **2つ目以降のターミナル** (コンテナが起動している状態で実行):
+   ```bash
+   docker exec -it bt_dev_container bash
+   ```
+
+## コンテナの終了方法
+- **中から終了**: `exit` と打つか、`Ctrl + D` を押します。
+- **外から終了**: `docker compose stop` を実行します。
+
 ## 可視化 (Groot2)
 本環境は Behavior Tree 可視化ツール **Groot2** に対応しています。
 
