@@ -104,7 +104,8 @@ graph LR
     ```
 
 ## コードの解説
-サンプルコードの詳しい解説は、[docs/SAMPLE_CODE.md](docs/SAMPLE_CODE.md) を参照してください。
+- [サンプルコードの解説](docs/SAMPLE_CODE.md): ソースコードの構造について
+- [新規アクション開発フロー](docs/DEVELOPMENT_FLOW.md): 新しい機能を追加する際の手順について
 
 ## ディレクトリ構成
 - `src/`: ROS 2 のソースコード（自分のパッケージはここに追加します）
