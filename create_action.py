@@ -89,6 +89,7 @@ class ActionCreatorGUI(QWidget):
             "5. <b>Logic</b>: <code>action_server.py</code> に生成された関数を実装"
         )
         help_desc = QLabel(usage_text)
+        help_desc.setWordWrap(True)
         help_desc.setStyleSheet("font-size: 11px; line-height: 1.4;")
         help_layout.addWidget(help_desc)
         c_layout.addWidget(help_box)
