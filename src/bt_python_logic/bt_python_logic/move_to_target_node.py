@@ -17,9 +17,6 @@ class MoveToTargetNode(Node):
         target_y = goal_handle.request.y
         self.get_logger().info(f'Moving to ({target_x}, {target_y})')
         
-        # --- [具体的なロボットの移動ロジックをここに実装してください] ---
-        # 例: Nav2 の Action クライアントを呼ぶ、または直接モーター制御など
-        
         current_x, current_y = 0.0, 0.0
         while True:
             dist = math.sqrt((target_x - current_x)**2 + (target_y - current_y)**2)
@@ -30,8 +27,6 @@ class MoveToTargetNode(Node):
             current_x += (target_x - current_x) * 0.2
             current_y += (target_y - current_y) * 0.2
             time.sleep(0.3)
-            
-        # ------------------------------------------------------------
             
         goal_handle.succeed()
         return MoveToTarget.Result(success=True)

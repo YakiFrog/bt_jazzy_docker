@@ -14,14 +14,7 @@ class CleanRoomNode(Node):
     def execute_callback(self, goal_handle):
         room = goal_handle.request.whichroom
         self.get_logger().info(f'Cleaning room: {room}')
-        
-        # --- [具体的な掃除ロジックをここに実装してください] ---
-        # 例: 掃除機のON/OFF、ルンバのような巡回パターンの開始など
-        
         time.sleep(1.0)
-        
-        # ------------------------------------------------------------
-        
         goal_handle.succeed()
         return CleanRoom.Result(success=True)
 

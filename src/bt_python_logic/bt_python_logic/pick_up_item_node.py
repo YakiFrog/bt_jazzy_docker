@@ -14,14 +14,7 @@ class PickUpItemNode(Node):
     def execute_callback(self, goal_handle):
         item = goal_handle.request.item
         self.get_logger().info(f'Picking up item: {item}')
-        
-        # --- [具体的なピッキングロジックをここに実装してください] ---
-        # 例: アームの制御ノードに目標姿勢を送る、グリッパーを閉じるなど
-        
         time.sleep(1.0)
-        
-        # ------------------------------------------------------------
-        
         goal_handle.succeed()
         return PickUpItem.Result(success=True)
 
