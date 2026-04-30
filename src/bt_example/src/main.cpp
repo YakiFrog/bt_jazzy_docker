@@ -6,10 +6,15 @@
 #include <bt_msgs/action/move_to_target.hpp>
 #include <bt_msgs/action/pick_up_item.hpp>
 #include <bt_msgs/action/clean_room.hpp>
-#include <rclcpp/rclcpp.hpp>
 #include <bt_msgs/action/tekito_action.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 using namespace BT;
+
+// =============================================================================
+// アクションノードの定義
+// =============================================================================
+
 class TekitoActionAction : public RosActionNode<bt_msgs::action::TekitoAction>
 {
 public:
@@ -29,7 +34,6 @@ public:
         return wr.result->success ? NodeStatus::SUCCESS : NodeStatus::FAILURE;
     }
 };
-
 
 class CleanRoomAction : public RosActionNode<bt_msgs::action::CleanRoom>
 {
@@ -51,7 +55,6 @@ public:
     }
 };
 
-
 class PickUpItemAction : public RosActionNode<bt_msgs::action::PickUpItem>
 {
 public:
@@ -72,10 +75,6 @@ public:
     }
 };
 
-
-/**
- * 挨拶アクションノード
- */
 class SaySomethingAction : public RosActionNode<bt_msgs::action::SaySomething>
 {
 public:
@@ -96,16 +95,12 @@ public:
     }
 };
 
-/**
- * 移動アクションノード (新規追加)
- */
 class MoveToTargetAction : public RosActionNode<bt_msgs::action::MoveToTarget>
 {
 public:
     MoveToTargetAction(const std::string& name, const NodeConfig& conf, const RosNodeParams& params)
       : RosActionNode<bt_msgs::action::MoveToTarget>(name, conf, params) {}
 
-    // ポートの定義: x と y の座標を受け取れるようにします
     static PortsList providedPorts() {
         return providedBasicPorts({ 
             InputPort<float>("x", 0.0, "目標の X 座標"),
@@ -113,37 +108,41 @@ public:
         });
     }
 
-    // ゴールの設定: ポートから読み取った値を Action の Goal に詰め込みます
     bool setGoal(Goal& goal) override {
-        if (!getInput("x", goal.x) || !getInput("y", goal.y)) {
-            return false;
-        }
+        if (!getInput("x", goal.x) || !getInput("y", goal.y)) return false;
         return true;
     }
 
-    // 結果の受信
     NodeStatus onResultReceived(const WrappedResult& wr) override {
         return wr.result->success ? NodeStatus::SUCCESS : NodeStatus::FAILURE;
     }
 
-    // フィードバックの受信: 残り距離をコンソールに表示
     virtual NodeStatus onFeedback(const std::shared_ptr<const bt_msgs::action::MoveToTarget::Feedback> feedback) override {
         std::cout << "[BT] 目標までの残り距離: " << feedback->distance << "m" << std::endl;
         return NodeStatus::RUNNING;
     }
 };
 
+// =============================================================================
+// メイン関数
+// =============================================================================
+
 int main(int argc, char** argv)
 {
     rclcpp::init(argc, argv);
     auto node = std::make_shared<rclcpp::Node>("bt_node_client");
 
-    BehaviorTreeFactory factory;
-    params.default_port_value = "tekito_action";
-    factory.registerNodeType<TekitoActionAction>("TekitoAction", params);
+    // パラメータの宣言 (読み込むXMLファイルを引数で変えられるようにする)
+    node->declare_parameter("tree_xml", "/ros2_ws/src/bt_example/tree/my_tree.xml");
+    std::string tree_xml_path = node->get_parameter("tree_xml").as_string();
 
+    BehaviorTreeFactory factory;
     RosNodeParams params;
     params.nh = node;
+
+    // --- [ACTION_REGISTRATION_MARKER] ---
+    params.default_port_value = "tekito_action";
+    factory.registerNodeType<TekitoActionAction>("TekitoAction", params);
 
     params.default_port_value = "clean_room";
     factory.registerNodeType<CleanRoomAction>("CleanRoom", params);
@@ -151,7 +150,6 @@ int main(int argc, char** argv)
     params.default_port_value = "pickupitem";
     factory.registerNodeType<PickUpItemAction>("PickUpItem", params);
 
-    // ノードの登録
     params.default_port_value = "say_something";
     factory.registerNodeType<SaySomethingAction>("SaySomething", params);
 
@@ -159,8 +157,8 @@ int main(int argc, char** argv)
     factory.registerNodeType<MoveToTargetAction>("MoveToTarget", params);
 
     // XML ファイルからツリーを読み込む
-    // コンテナ内の絶対パスを指定します
-    auto tree = factory.createTreeFromFile("/ros2_ws/src/bt_example/tree/my_tree2.xml");
+    std::cout << "Loading Tree from: " << tree_xml_path << std::endl;
+    auto tree = factory.createTreeFromFile(tree_xml_path);
     
     Groot2Publisher publisher(tree);
 
