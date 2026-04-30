@@ -24,7 +24,6 @@ def remove_from_file_by_pattern(file_path, pattern):
     if not os.path.exists(file_path): return
     with open(file_path, 'r') as f: lines = f.readlines()
     with open(file_path, 'w') as f:
-        skip = False
         for line in lines:
             if re.search(pattern, line): continue
             f.write(line)
@@ -57,8 +56,8 @@ class ActionManagerGUI(QWidget):
         main_layout = QVBoxLayout(self)
         
         self.tabs = QTabWidget()
-        self.tabs.addTab(self.create_tab_widget(), "✨ Create Action")
-        self.tabs.addTab(self.manage_tab_widget(), "🗑️ Manage Actions")
+        self.tabs.addTab(self.create_tab_widget(), "作成 (Create)")
+        self.tabs.addTab(self.manage_tab_widget(), "管理・削除 (Manage)")
         main_layout.addWidget(self.tabs)
 
     def create_tab_widget(self):
@@ -76,7 +75,7 @@ class ActionManagerGUI(QWidget):
         self.tree_name_input = QLineEdit("my_tree.xml")
         layout.addWidget(self.tree_name_input)
         
-        btn_new_tree = QPushButton("✨ この名前で空のツリーを新規作成")
+        btn_new_tree = QPushButton("空のツリーを新規作成・設定")
         btn_new_tree.clicked.connect(self.create_empty_tree)
         layout.addWidget(btn_new_tree)
         layout.addSpacing(10); layout.addWidget(QLabel("<hr>"))
@@ -94,7 +93,7 @@ class ActionManagerGUI(QWidget):
         self.field_rows = []
         self.addFieldRow()
         
-        add_btn = QPushButton("+ Add Port")
+        add_btn = QPushButton("+ Port を追加")
         add_btn.clicked.connect(self.addFieldRow)
         layout.addWidget(add_btn)
 
@@ -118,12 +117,12 @@ class ActionManagerGUI(QWidget):
         self.action_list = QListWidget()
         layout.addWidget(self.action_list)
         
-        refresh_btn = QPushButton("🔄 リストを更新")
+        refresh_btn = QPushButton("リストを更新")
         refresh_btn.clicked.connect(self.refresh_action_list)
         layout.addWidget(refresh_btn)
 
         layout.addSpacing(20)
-        remove_btn = QPushButton("🗑️ 選択したアクションを完全に削除")
+        remove_btn = QPushButton("選択したアクションを完全に削除")
         remove_btn.setObjectName("RemoveBtn")
         remove_btn.clicked.connect(self.remove_action)
         layout.addWidget(remove_btn)
