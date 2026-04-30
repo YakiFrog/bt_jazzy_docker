@@ -15,9 +15,14 @@ class SaySomethingNode(Node):
         message = goal_handle.request.message
         self.get_logger().info(f'Executing SaySomething: {message}')
         
+        # --- [具体的な発話ロジックをここに実装してください] ---
+        # 例: TTS (Text-to-Speech) ノードにリクエストを送る、スピーカーから音を出すなど
+        
         for i in range(1, 6):
             goal_handle.publish_feedback(SaySomething.Feedback(progress=i*20.0))
             time.sleep(0.3)
+            
+        # --------------------------------------------------------
             
         goal_handle.succeed()
         return SaySomething.Result(success=True)
