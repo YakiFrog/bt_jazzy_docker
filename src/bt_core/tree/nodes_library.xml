@@ -1,5 +1,8 @@
 <root BTCPP_format="4">
     <TreeNodesModel>
+        <Condition ID="CheckBattery">
+            <input_port name="tekito" type="float"/>
+        </Condition>
         <Action ID="SaySomething">
             <input_port name="message" type="std::string"/>
         </Action>

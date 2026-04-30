@@ -10,8 +10,29 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include <bt_msgs/srv/condition_check.hpp>
+#include <bt_msgs/srv/check_battery.hpp>
 
 using namespace BT;
+class CheckBatteryCondition : public RosServiceNode<bt_msgs::srv::CheckBattery>
+{
+public:
+    CheckBatteryCondition(const std::string& name, const NodeConfig& conf, const RosNodeParams& params)
+      : RosServiceNode<bt_msgs::srv::CheckBattery>(name, conf, params) {}
+
+    static PortsList providedPorts() {
+        return providedBasicPorts({ InputPort<float>("tekito") });
+    }
+
+    bool setRequest(std::shared_ptr<bt_msgs::srv::CheckBattery::Request>& request) override {
+        getInput("tekito", request->tekito);
+        return true;
+    }
+
+    bool onResponseReceived(const std::shared_ptr<bt_msgs::srv::CheckBattery::Response>& response) override {
+        return response->result;
+    }
+};
+
 
 // =============================================================================
 // サービス通信用ベースクラス (判定ノード用)
@@ -181,6 +202,8 @@ int main(int argc, char** argv)
     params.nh = node;
 
     // --- [ACTION_REGISTRATION_MARKER] ---
+    params.default_port_value = "check_battery";
+    factory.registerNodeType<CheckBatteryCondition>("CheckBattery", params);
 
     params.default_port_value = "tekito_action";
     factory.registerNodeType<TekitoActionAction>("TekitoAction", params);

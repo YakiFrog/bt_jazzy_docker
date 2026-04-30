@@ -25,6 +25,7 @@ setup(
     entry_points={
         'console_scripts': [
             # --- [CONSOLE_SCRIPTS_MARKER] ---
+            'check_battery_node = bt_logic.check_battery_node:main',
             'tekito_action_node = bt_logic.tekito_action_node:main',
             'clean_room_node = bt_logic.clean_room_node:main',
             'pick_up_item_node = bt_logic.pick_up_item_node:main',
