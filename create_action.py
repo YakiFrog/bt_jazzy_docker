@@ -194,7 +194,14 @@ class ActionManagerGUI(QWidget):
         # 4. setup.py
         add_to_file_after_marker("src/bt_python_logic/setup.py", f"            '{node_name} = bt_python_logic.{node_name}:main',\n", "[CONSOLE_SCRIPTS_MARKER]")
         # 5. Launch
-        add_to_file_after_marker("src/bt_python_logic/launch/action_logic.launch.py", f"        Node(package='bt_python_logic', executable='{node_name}', name='{node_name}', output='screen'),\n", "[ACTION_NODES_MARKER]")
+        launch_node = f"""        Node(
+            package='bt_python_logic',
+            executable='{node_name}',
+            name='{node_name}',
+            output='screen'
+        ),
+"""
+        add_to_file_after_marker("src/bt_python_logic/launch/action_logic.launch.py", launch_node, "[ACTION_NODES_MARKER]")
         # 6. C++
         add_to_file_after_marker("src/bt_core/src/main.cpp", f'#include <bt_msgs/action/{snake}.hpp>\n', "#include <rclcpp/rclcpp.hpp>")
         cpp_t = {"float32": "float", "int32": "int", "string": "std::string", "bool": "bool"}
@@ -218,10 +225,16 @@ class ActionManagerGUI(QWidget):
             for p in paths:
                 if os.path.exists(p): os.remove(p)
             
-            # Remove from config files
+            # Remove from config files (simple line removal)
             remove_from_file_by_pattern("src/bt_msgs/CMakeLists.txt", f'"{name}.action"')
             remove_from_file_by_pattern("src/bt_python_logic/setup.py", f"'{snake}_node")
-            remove_from_file_by_pattern("src/bt_python_logic/launch/action_logic.launch.py", f"executable='{snake}_node'")
+            
+            # Better removal for Launch File (Removes the entire Node block)
+            launch_path = "src/bt_python_logic/launch/action_logic.launch.py"
+            if os.path.exists(launch_path):
+                with open(launch_path, 'r') as f: content = f.read()
+                content = re.sub(rf'        Node\(.*?executable=\'{snake}_node\'.*?\),?\n', '', content, flags=re.DOTALL)
+                with open(launch_path, 'w') as f: f.write(content)
             
             # C++ cleanup (Removes class, include, and registration)
             cpp_path = "src/bt_core/src/main.cpp"
