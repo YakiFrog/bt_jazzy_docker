@@ -25,7 +25,6 @@ setup(
     entry_points={
         'console_scripts': [
             # --- [CONSOLE_SCRIPTS_MARKER] ---
-            'tekito_action2_node = bt_python_logic.tekito_action2_node:main',
             'tekito_action_node = bt_python_logic.tekito_action_node:main',
             'clean_room_node = bt_python_logic.clean_room_node:main',
             'pick_up_item_node = bt_python_logic.pick_up_item_node:main',

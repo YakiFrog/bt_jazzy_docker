@@ -8,29 +8,8 @@
 #include <bt_msgs/action/clean_room.hpp>
 #include <bt_msgs/action/tekito_action.hpp>
 #include <rclcpp/rclcpp.hpp>
-#include <bt_msgs/action/tekito_action2.hpp>
 
 using namespace BT;
-class TekitoAction2Action : public RosActionNode<bt_msgs::action::TekitoAction2>
-{
-public:
-    TekitoAction2Action(const std::string& name, const NodeConfig& conf, const RosNodeParams& params)
-      : RosActionNode<bt_msgs::action::TekitoAction2>(name, conf, params) {}
-
-    static PortsList providedPorts() {
-        return providedBasicPorts({ InputPort<int>("nandemoii") });
-    }
-
-    bool setGoal(Goal& goal) override {
-        getInput("nandemoii", goal.nandemoii);
-        return true;
-    }
-
-    NodeStatus onResultReceived(const WrappedResult& wr) override {
-        return wr.result->success ? NodeStatus::SUCCESS : NodeStatus::FAILURE;
-    }
-};
-
 
 // =============================================================================
 // アクションノードの定義
@@ -163,8 +142,6 @@ int main(int argc, char** argv)
 
     // --- [ACTION_REGISTRATION_MARKER] ---
 
-    params.default_port_value = "tekito_action2";
-    factory.registerNodeType<TekitoAction2Action>("TekitoAction2", params);
     params.default_port_value = "tekito_action";
     factory.registerNodeType<TekitoActionAction>("TekitoAction", params);
 

@@ -7,7 +7,6 @@ def generate_launch_description():
         # --- [ACTION_NODES_MARKER] ---
         Node(
             package='bt_python_logic',
-            executable='tekito_action2_node',
             name='tekito_action2_node',
             output='screen'
         ),
