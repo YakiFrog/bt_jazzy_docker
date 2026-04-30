@@ -32,7 +32,7 @@ def remove_from_file_by_pattern(file_path, pattern):
 def update_tree_path_in_cpp(file_path, new_xml_name):
     if not os.path.exists(file_path): return
     with open(file_path, 'r') as f: content = f.read()
-    new_path = f'/ros2_ws/src/bt_example/tree/{new_xml_name}'
+    new_path = f'/ros2_ws/src/bt_core/tree/{new_xml_name}'
     updated_content = re.sub(r'createTreeFromFile\(".+?"\)', f'createTreeFromFile("{new_path}")', content)
     with open(file_path, 'w') as f: f.write(updated_content)
 
@@ -165,15 +165,15 @@ class ActionManagerGUI(QWidget):
         name = self.tree_name_input.text().strip()
         if not name.endswith(".xml"): name += ".xml"
         if QMessageBox.question(self, "Confirm", f"Overwrite {name}?") == QMessageBox.Yes:
-            tree_path = f"src/bt_example/tree/{name}"
+            tree_path = f"src/bt_core/tree/{name}"
             os.makedirs(os.path.dirname(tree_path), exist_ok=True)
             with open(tree_path, 'w') as f:
                 f.write(f'<root BTCPP_format="4">\n  <BehaviorTree ID="MainTree">\n    <Sequence>\n      <AlwaysSuccess name="placeholder"/>\n    </Sequence>\n  </BehaviorTree>\n</root>')
-            update_tree_path_in_cpp("src/bt_example/src/main.cpp", name)
+            update_tree_path_in_cpp("src/bt_core/src/main.cpp", name)
             QMessageBox.information(self, "Success", "Empty tree created.")
 
     def update_palette_only(self, name, fields):
-        path = "src/bt_example/tree/nodes_library.xml"
+        path = "src/bt_core/tree/nodes_library.xml"
         cpp_t = {"float32": "float", "int32": "int", "string": "std::string", "bool": "bool"}
         ports = "".join([f'            <input_port name="{f.split(":")[0]}" type="{cpp_t[f.split(":")[1]]}"/>\n' for f in fields])
         node_xml = f'        <Action ID="{name}">\n{ports}        </Action>\n'
@@ -197,13 +197,13 @@ class ActionManagerGUI(QWidget):
         # 5. Launch
         add_to_file_after_marker("src/bt_python_logic/launch/action_logic.launch.py", f"        Node(package='bt_python_logic', executable='{node_name}', name='{node_name}', output='screen'),\n", "[ACTION_NODES_MARKER]")
         # 6. C++
-        add_to_file_after_marker("src/bt_example/src/main.cpp", f'#include <bt_msgs/action/{snake}.hpp>\n', "#include <rclcpp/rclcpp.hpp>")
+        add_to_file_after_marker("src/bt_core/src/main.cpp", f'#include <bt_msgs/action/{snake}.hpp>\n', "#include <rclcpp/rclcpp.hpp>")
         cpp_t = {"float32": "float", "int32": "int", "string": "std::string", "bool": "bool"}
         ports = ", ".join([f'InputPort<{cpp_t[f.split(":")[1]]}>("{f.split(":")[0]}")' for f in fields])
         sets = "\n        ".join([f'getInput("{f.split(":")[0]}", goal.{f.split(":")[0]});' for f in fields])
         class_code = f"class {name}Action : public RosActionNode<bt_msgs::action::{name}>\n{{\npublic:\n    {name}Action(const std::string& name, const NodeConfig& conf, const RosNodeParams& params) : RosActionNode<bt_msgs::action::{name}>(name, conf, params) {{}}\n    static PortsList providedPorts() {{ return providedBasicPorts({{ {ports} }}); }}\n    bool setGoal(Goal& goal) override {{ {sets}\n        return true; }}\n    NodeStatus onResultReceived(const WrappedResult& wr) override {{ return wr.result->success ? NodeStatus::SUCCESS : NodeStatus::FAILURE; }}\n}};\n\n"
-        add_to_file_after_marker("src/bt_example/src/main.cpp", class_code, "using namespace BT;")
-        add_to_file_after_marker("src/bt_example/src/main.cpp", f'    params.default_port_value = "{snake}";\n    factory.registerNodeType<{name}Action>("{name}", params);\n', "[ACTION_REGISTRATION_MARKER]")
+        add_to_file_after_marker("src/bt_core/src/main.cpp", class_code, "using namespace BT;")
+        add_to_file_after_marker("src/bt_core/src/main.cpp", f'    params.default_port_value = "{snake}";\n    factory.registerNodeType<{name}Action>("{name}", params);\n', "[ACTION_REGISTRATION_MARKER]")
         # 7. Palette
         self.update_palette_only(name, fields)
 
@@ -225,7 +225,7 @@ class ActionManagerGUI(QWidget):
             remove_from_file_by_pattern("src/bt_python_logic/launch/action_logic.launch.py", f"executable='{snake}_node'")
             
             # C++ cleanup (Removes class, include, and registration)
-            cpp_path = "src/bt_example/src/main.cpp"
+            cpp_path = "src/bt_core/src/main.cpp"
             if os.path.exists(cpp_path):
                 with open(cpp_path, 'r') as f: content = f.read()
                 content = re.sub(f'#include <bt_msgs/action/{snake}.hpp>\n', '', content)
@@ -234,7 +234,7 @@ class ActionManagerGUI(QWidget):
                 with open(cpp_path, 'w') as f: f.write(content)
             
             # Palette cleanup
-            pal_path = "src/bt_example/tree/nodes_library.xml"
+            pal_path = "src/bt_core/tree/nodes_library.xml"
             if os.path.exists(pal_path):
                 with open(pal_path, 'r') as f: content = f.read()
                 content = re.sub(rf'        <Action ID="{name}">.*?\n        </Action>\n', '', content, flags=re.DOTALL)
