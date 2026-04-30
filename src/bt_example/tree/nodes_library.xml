@@ -1,5 +1,8 @@
 <root BTCPP_format="4">
     <TreeNodesModel>
+        <Action ID="TekitoAction2">
+            <input_port name="nandemoii" type="int"/>
+        </Action>
         <Action ID="SaySomething">
             <input_port name="message" type="std::string"/>
         </Action>
