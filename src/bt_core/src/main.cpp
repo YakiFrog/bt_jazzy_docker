@@ -13,26 +13,6 @@
 #include <bt_msgs/srv/check_battery.hpp>
 
 using namespace BT;
-class CheckBatteryCondition : public RosServiceNode<bt_msgs::srv::CheckBattery>
-{
-public:
-    CheckBatteryCondition(const std::string& name, const NodeConfig& conf, const RosNodeParams& params)
-      : RosServiceNode<bt_msgs::srv::CheckBattery>(name, conf, params) {}
-
-    static PortsList providedPorts() {
-        return providedBasicPorts({ InputPort<float>("tekito") });
-    }
-
-    bool setRequest(std::shared_ptr<bt_msgs::srv::CheckBattery::Request>& request) override {
-        getInput("tekito", request->tekito);
-        return true;
-    }
-
-    bool onResponseReceived(const std::shared_ptr<bt_msgs::srv::CheckBattery::Response>& response) override {
-        return response->result;
-    }
-};
-
 
 // =============================================================================
 // サービス通信用ベースクラス (判定ノード用)
@@ -70,6 +50,26 @@ public:
 protected:
     rclcpp::Node::SharedPtr node_;
     typename rclcpp::Client<ServiceT>::SharedPtr client_;
+};
+
+class CheckBatteryCondition : public RosServiceNode<bt_msgs::srv::CheckBattery>
+{
+public:
+    CheckBatteryCondition(const std::string& name, const NodeConfig& conf, const RosNodeParams& params)
+      : RosServiceNode<bt_msgs::srv::CheckBattery>(name, conf, params) {}
+
+    static PortsList providedPorts() {
+        return providedBasicPorts({ InputPort<float>("tekito") });
+    }
+
+    bool setRequest(std::shared_ptr<bt_msgs::srv::CheckBattery::Request>& request) override {
+        getInput("tekito", request->tekito);
+        return true;
+    }
+
+    bool onResponseReceived(const std::shared_ptr<bt_msgs::srv::CheckBattery::Response>& response) override {
+        return response->result;
+    }
 };
 
 // =============================================================================
