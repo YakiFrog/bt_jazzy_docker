@@ -1,5 +1,8 @@
 # Behavior Tree Docker Container 用のエイリアス設定
 
+# .bashrc_docker に追記例
+export ROS_DOMAIN_ID=56
+
 # 基本コマンド
 alias build='colcon build --symlink-install'
 alias src='source install/setup.bash'
