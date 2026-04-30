@@ -1,96 +1,56 @@
-# BehaviorTree.CPP v4 for ROS 2 Jazzy (Professional Architecture)
+# ROS 2 Jazzy Behavior Tree & Logic Studio
 
-このリポジトリは、**ROS 2 Jazzy** 上で **BehaviorTree.CPP v4** を使用し、堅牢でスケーラブルなロボットミッションを開発するための環境を提供します。
+このリポジトリは、ROS 2 Jazzy 環境で **Behavior Tree (C++)** と **ロボット技能ロジック (Python)** を高度に統合し、爆速で開発するためのスタジオ環境です。
 
-## プロフェッショナルな設計思想
-本環境は、単なるサンプルの枠を超え、実際のロボット開発現場で採用される「技能（Logic）と知能（Core）の分離」を徹底しています。
+---
 
-- **bt_core (知能)**: C++ で記述された Behavior Tree エンジン。ミッションの進行管理と意思決定を行います。
-- **bt_logic (技能)**: Python で記述された独立したアクションサーバー群。ロボットの具体的な各動作（移動、発話、アーム制御など）を担当します。
-- **独立ノード構成**: 各アクションは個別のプロセスとして動作するため、一つのアクションのバグがシステム全体を停止させることはありません。
+## 🛠️ コアコンポーネント
 
-## 特徴
-- **ROS 2 Jazzy 対応**: 最新の Jazzy 環境で最適化。
-- **BehaviorTree.CPP v4**: リアルタイム性の高いミッション制御が可能。
-- **Action Manager GUI**: プログラミングなしでアクションの生成・登録・削除ができる専用ツールを同梱。
-- **Groot2 対応**: ツリーのリアルタイム監視と編集が可能。
+| コンポーネント | 役割 | 言語 |
+| :--- | :--- | :--- |
+| **[bt_core](src/bt_core/)** | 「知能」：ツリーの実行エンジン。Groot2 で設計した XML を読み込みます。 | C++ |
+| **[bt_logic](src/bt_logic/)** | 「技能」：各アクションや判定の具体的な制御ロジック（ROS 2 ノード群）。 | Python |
+| **[bt_msgs](src/bt_msgs/)** | 通信インターフェース：Action と Service の定義。 | ROS 2 Interfaces |
+| **[bt_node_manager.py](bt_node_manager.py)** | **管理スタジオ (GUI)**：ノードの生成、削除、単体テストを完結させます。 | Python (PySide6) |
 
-## クイックスタート
+---
 
-### 1. 初回セットアップ
+## 🚀 開発の黄金サイクル
+
+この環境では、以下の 3 ステップでロボットに新しいスキルを追加できます。
+
+### 1. 技能の生成とテスト
+`node_manager` コマンドで GUI を起動し、新しいアクション（Action）や判定（Condition）を作成します。
+作成後、**「Test」タブ** を使って、ツリーを組む前にそのノードが単体で正しく動くか確認できます。
+
+### 2. ツリーの設計
+[Groot2](https://www.behaviortree.dev/groot/) を開き、`src/bt_core/tree/nodes_library.xml` を読み込んでツリーを設計します。作成したノードは自動的にパレットに追加されています。
+
+### 3. ビルドと実行
+ビルドして、知能と技能をそれぞれ起動します。
 ```bash
-chmod +x setup_workspace.sh
-./setup_workspace.sh
+build       # 全パッケージのビルド
+run_logic   # 技能サーバー（Python ノード群）の起動
+run_bt      # 知能（BT Core）の起動
 ```
 
-### 2. 実行ワークフロー
-開発中は以下の 3 つのコマンドを常用します。
+---
 
-1. **技能サーバーの起動** (Terminal 1):
-   ```bash
-   bt_start
-   run_logic  # すべての独立アクションノードを一括起動
-   ```
-2. **知能（ツリー）の起動** (Terminal 2):
-   ```bash
-   bt_enter
-   run_bt     # Behavior Tree を実行
-   ```
-3. **アクション管理** (Terminal 3):
-   ```bash
-   bt_enter
-   create_action  # GUI マネージャーを起動
-   ```
+## 📖 詳細ドキュメント
 
-## 開発ワークフロー
+より詳しい使い方は、以下のガイドを参照してください。
 
-### アクションの追加・管理 (`create_action`)
-専用の GUI ツールを使用して、ボイラープレート（雛形）を全自動生成します。
+*   **[BT Node Manager の使い方](docs/node_manager.md)**: GUI を使ったスキルの作り方とテスト方法。
+*   **[ロジックの実装ガイド](docs/logic_implementation.md)**: 生成された Python ファイルのどこにコードを書くべきか。
+*   **[アーキテクチャ詳細](docs/architecture.md)**: 知能(C++)と技能(Python)がどのように通信しているか。
 
-```bash
-create_action
-```
-- **作成**: 名前とポートを入力するだけで、`.action`定義、C++登録コード、Python独立ノード、Launchファイル追記をすべて自動で行います。
-- **削除**: 不要になったアクションをリストから選んで「完全に削除」できます。関連するコードやファイルもすべてクリーンアップされます。
+---
 
-### ロジックの実装
-生成された Python ファイル（`src/bt_logic/bt_logic/{action_name}_node.py`）を開き、`# --- [具体的なロボットのロジックを実装してください] ---` の部分に処理を記述します。
+## 🖥️ 便利なエイリアス一覧
+コンテナ内では以下の短縮コマンドが使えます。
 
-### ツリーの設計 (Groot2)
-1. **設計**: `src/bt_core/tree/nodes_library.xml` を Groot2 で読み込み、アクションを配置します。
-2. **監視**: プログラム実行中に Groot2 の **Monitor** タブで接続すると、現在の実行状態がリアルタイムに表示されます。
-
-## アーキテクチャ図
-```mermaid
-graph TD
-    subgraph "bt_core (C++ Node)"
-        BT[Behavior Tree Engine]
-        AC[Action Clients]
-    end
-
-    subgraph "bt_logic (Independent Python Nodes)"
-        SAY[say_something_node]
-        MOVE[move_to_target_node]
-        CLEAN[clean_room_node]
-        OTHER[...]
-    end
-
-    BT --> AC
-    AC -- "Goal" --> SAY
-    AC -- "Goal" --> MOVE
-    AC -- "Goal" --> CLEAN
-    
-    SAY -- "Result/Feedback" --> AC
-    MOVE -- "Result/Feedback" --> AC
-    CLEAN -- "Result/Feedback" --> AC
-    
-    style bt_logic fill:#f9f,stroke:#333,stroke-width:2px
-    style bt_core fill:#bbf,stroke:#333,stroke-width:2px
-```
-
-## ディレクトリ構成
-- `src/bt_core/`: 知能側パッケージ（C++, Tree XML）
-- `src/bt_logic/`: 技能側パッケージ（Python Nodes, Launch）
-- `src/bt_msgs/`: 共通アクション型定義
-- `create_action.py`: アクションマネージャー GUI
-- `.bashrc_docker`: 開発用エイリアス設定
+- `build`: パッケージ全体のビルド (`colcon build`)
+- `src`: 環境変数の反映 (`source install/setup.bash`)
+- `node_manager`: **BT Node Manager (GUI)** の起動
+- `run_logic`: 全アクション/判定ノードの起動
+- `run_bt`: Behavior Tree 本体の起動
