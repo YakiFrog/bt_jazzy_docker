@@ -1,161 +1,96 @@
-# BehaviorTree.CPP v4 for ROS 2 Jazzy (Docker 開発環境)
+# BehaviorTree.CPP v4 for ROS 2 Jazzy (Professional Architecture)
 
-このリポジトリは、**ROS 2 Jazzy** 上で **BehaviorTree.CPP v4** を使用するための Docker 開発環境を提供します。
+このリポジトリは、**ROS 2 Jazzy** 上で **BehaviorTree.CPP v4** を使用し、堅牢でスケーラブルなロボットミッションを開発するための環境を提供します。
+
+## プロフェッショナルな設計思想
+本環境は、単なるサンプルの枠を超え、実際のロボット開発現場で採用される「技能（Logic）と知能（Core）の分離」を徹底しています。
+
+- **bt_core (知能)**: C++ で記述された Behavior Tree エンジン。ミッションの進行管理と意思決定を行います。
+- **bt_logic (技能)**: Python で記述された独立したアクションサーバー群。ロボットの具体的な各動作（移動、発話、アーム制御など）を担当します。
+- **独立ノード構成**: 各アクションは個別のプロセスとして動作するため、一つのアクションのバグがシステム全体を停止させることはありません。
 
 ## 特徴
-- **ROS 2 Jazzy 対応**: 公式の `ros:jazzy-ros-base` イメージをベースに構築。
-- **BehaviorTree.CPP v4 標準搭載**: Jazzy 対応の最新版 (v4.9.0) がプリインストール済み。
-- **永続的なワークスペース**: ビルド成果物 (`build`, `install`, `log`) はホスト側に保存されるため、コンテナを消しても再ビルドは不要。
-- **サンプルパッケージ同梱**: すぐに動作確認ができる `bt_example` パッケージが含まれています。
-
-## 動作要件
-- Docker
-- Docker Compose
+- **ROS 2 Jazzy 対応**: 最新の Jazzy 環境で最適化。
+- **BehaviorTree.CPP v4**: リアルタイム性の高いミッション制御が可能。
+- **Action Manager GUI**: プログラミングなしでアクションの生成・登録・削除ができる専用ツールを同梱。
+- **Groot2 対応**: ツリーのリアルタイム監視と編集が可能。
 
 ## クイックスタート
 
-### 1. 初回セットアップ & ビルド
-以下のスクリプトを実行して、Docker イメージの作成と ROS 2 ワークスペースのビルドを行います。
+### 1. 初回セットアップ
 ```bash
 chmod +x setup_workspace.sh
 ./setup_workspace.sh
 ```
 
-### 2. 開発環境の起動
-コンテナ内に入るには、以下のコマンドを実行します。
-```bash
-docker compose run --rm bt_dev
-```
+### 2. 実行ワークフロー
+開発中は以下の 3 つのコマンドを常用します。
 
-### 3. サンプルの実行
-コンテナ内で、サンプルノードを起動して動作を確認します。
-```bash
-ros2 run bt_example bt_node
-```
-
-## Tips: 複数のターミナルを開く方法
-Action Server と BT ノードを同時に動かす場合など、複数のターミナルでコンテナに入る必要があります。
-ホスト側の `.bashrc` に便利なエイリアスを設定済みです。
-
-1. **1つ目のターミナル (起動)**: 
+1. **技能サーバーの起動** (Terminal 1):
    ```bash
    bt_start
+   run_logic  # すべての独立アクションノードを一括起動
    ```
-2. **2つ目以降のターミナル (追加)**:
+2. **知能（ツリー）の起動** (Terminal 2):
    ```bash
    bt_enter
+   run_bt     # Behavior Tree を実行
+   ```
+3. **アクション管理** (Terminal 3):
+   ```bash
+   bt_enter
+   create_action  # GUI マネージャーを起動
    ```
 
-## コンテナの終了方法
-- **中から終了**: `exit` と打つか、`Ctrl + D` を押します。
-- **外から終了**: `docker compose stop` を実行します。
+## 開発ワークフロー
 
-## 可視化 (Groot2)
-本環境は Behavior Tree 可視化ツール **Groot2** に対応しています。
-
-1. **プログラム側の準備**: `main.cpp` 等で `Groot2Publisher` をインスタンス化します。
-2. **Groot2 の起動**: ホスト側で Groot2 を起動します。
-3. **接続**: 
-    - Groot2 の **Monitor** タブを選択。
-    - **Connect** ボタンをクリック（IP: `127.0.0.1`, Port: `1667`）。
-
-### Groot2 のインストール (ホスト側)
-本リポジトリには Linux 用のインストーラーが同梱されています。未インストールの場合は以下の手順でホスト側にインストールしてください。
+### アクションの追加・管理 (`create_action`)
+専用の GUI ツールを使用して、ボイラープレート（雛形）を全自動生成します。
 
 ```bash
-# 実行権限を付与して実行
-chmod +x Groot2-v1.9.0-linux-installer.run
-./Groot2-v1.9.0-linux-installer.run
+create_action
 ```
-※ インストール先はデフォルト（`~/Groot2`）を推奨します。エイリアス設定もこのパスに基づいています。
+- **作成**: 名前とポートを入力するだけで、`.action`定義、C++登録コード、Python独立ノード、Launchファイル追記をすべて自動で行います。
+- **削除**: 不要になったアクションをリストから選んで「完全に削除」できます。関連するコードやファイルもすべてクリーンアップされます。
 
-## Python との連携 (Nav2 方式)
-本環境では、Nav2 と同様に「Behavior Tree は C++、実際のロジックは Python」という構成が可能です。
+### ロジックの実装
+生成された Python ファイル（`src/bt_logic/bt_logic/{action_name}_node.py`）を開き、`# --- [具体的なロボットのロジックを実装してください] ---` の部分に処理を記述します。
 
-### アーキテクチャ
+### ツリーの設計 (Groot2)
+1. **設計**: `src/bt_core/tree/nodes_library.xml` を Groot2 で読み込み、アクションを配置します。
+2. **監視**: プログラム実行中に Groot2 の **Monitor** タブで接続すると、現在の実行状態がリアルタイムに表示されます。
+
+## アーキテクチャ図
 ```mermaid
-graph LR
-    subgraph "C++ (Container)"
+graph TD
+    subgraph "bt_core (C++ Node)"
         BT[Behavior Tree Engine]
-        AC[Action Client Node]
+        AC[Action Clients]
     end
 
-    subgraph "Python (Container)"
-        AS[Action Server / Logic]
+    subgraph "bt_logic (Independent Python Nodes)"
+        SAY[say_something_node]
+        MOVE[move_to_target_node]
+        CLEAN[clean_room_node]
+        OTHER[...]
     end
 
     BT --> AC
-    AC -- "1. Goal (message)" --> AS
-    AS -- "2. Feedback (progress)" --> AC
-    AS -- "3. Result (success)" --> AC
-    AC --> BT
+    AC -- "Goal" --> SAY
+    AC -- "Goal" --> MOVE
+    AC -- "Goal" --> CLEAN
     
-    style AS fill:#f9f,stroke:#333,stroke-width:2px
+    SAY -- "Result/Feedback" --> AC
+    MOVE -- "Result/Feedback" --> AC
+    CLEAN -- "Result/Feedback" --> AC
+    
+    style bt_logic fill:#f9f,stroke:#333,stroke-width:2px
+    style bt_core fill:#bbf,stroke:#333,stroke-width:2px
 ```
-
-### 実行方法
-1. **Python ロジック (Action Server) の起動**:
-    ```bash
-    ros2 run bt_python_logic action_server
-    ```
-2. **Behavior Tree (C++) の起動**:
-    ```bash
-    ros2 run bt_example bt_node
-    ```
-
-## コードの解説
-- [サンプルコードの解説](docs/SAMPLE_CODE.md): ソースコードの構造について
-- [新規アクション開発フロー](docs/DEVELOPMENT_FLOW.md): 新しい機能を追加する際の手順について
 
 ## ディレクトリ構成
-- `src/`: ROS 2 のソースコード（自分のパッケージはここに追加します）
-- `Dockerfile`: コンテナの定義ファイル
-- `docker-compose.yml`: コンテナの起動設定・マウント設定
-- `setup_workspace.sh`: ビルド用のユーティリティスクリプト
-- `build/`, `install/`, `log/`: ビルド成果物（ホスト側に生成されます）
-
-## 新しいアクションの高速開発 (`create_action.py`)
-新しい動作を追加する際のボイラープレートを自動生成するツールを用意しました。
-
-```bash
-# 使用例: 「掃除」アクション (引数 room_id) を追加
-./create_action.py CleanRoom room_id:int32
-```
-
-このコマンド（または GUI）一つで、以下のすべてが自動で行われます：
-
-### 自動化される範囲
-- **通信**: `{ActionName}.action` の作成と `CMakeLists.txt` への登録。
-- **Python**: `action_server.py` への import 追加、サーバー初期化、**コールバック関数の雛形作成**。
-- **C++**: `main.cpp` へのヘッダ追加、**BTノードクラスの定義**、**Factory への登録**。
-
-### 手動で行うこと
-1. **ロジックの実装**: `action_server.py` に生成された関数内（`# TODO` 部分）に具体的な処理を書く。
-2. **ビルド**: コンテナ内で `build` コマンドを実行。
-3. **ツリー設計**: `my_tree.xml` に新しいノードを配置。
-
-実行後は、すぐに `my_tree.xml` で `<ActionName arg="value"/>` と書いて使い始めることができます。
-
-## 開発ワークフロー (標準的な流れ)
-本環境では、以下のサイクルで開発を進めるのが最も効率的です。
-
-1. **コードの編集 (ホスト側)**: 
-   VSCode 等のお好みのエディタを使用して、ホスト側の `src/` 内のソースコードを編集・保存します。
-2. **ビルド (コンテナ内)**: 
-   コンテナ内のターミナルでビルドコマンドを実行します。
-   ```bash
-   build
-   ```
-3. **環境の反映 (コンテナ内)**:
-   ビルドした成果物を現在のセッションに反映させます。
-   ```bash
-   src
-   ```
-4. **プログラムの実行 (コンテナ内)**:
-   ```bash
-   run_logic  # (ターミナル1)
-   run_bt     # (ターミナル2: bt_enter で入る)
-   ```
-
-## なぜ Docker 内でビルドするのか？
-コンテナ内でビルドを行うことで、どの PC を使っても**「全く同じコンパイラ、全く同じライブラリのバージョン」**で開発を行うことができます。これにより、OS の差異による「自分の環境では動くのに他の人の環境では動かない」といったトラブルを防ぎ、ホスト OS をクリーンに保つことができます。
+- `src/bt_core/`: 知能側パッケージ（C++, Tree XML）
+- `src/bt_logic/`: 技能側パッケージ（Python Nodes, Launch）
+- `src/bt_msgs/`: 共通アクション型定義
+- `create_action.py`: アクションマネージャー GUI
+- `.bashrc_docker`: 開発用エイリアス設定

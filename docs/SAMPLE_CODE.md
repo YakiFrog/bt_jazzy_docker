@@ -1,77 +1,54 @@
-# サンプルコードの解説 (C++ BT + Python Logic)
+# サンプルコードの構造解説
 
-本プロジェクトでは、Behavior Tree 本体を **C++** で記述し、具体的なロボットのロジック（重い処理や Action Server）を **Python** で記述する、Nav2 と同様の実践的な構成を採用しています。
-
-## 構成の全体像
-
-1. **`bt_msgs`**: 通信用のインターフェース（Action）を定義。
-2. **`bt_python_logic`**: Python で書かれたロジック。Action Server として動作。
-3. **`bt_example`**: C++ で書かれた Behavior Tree エンジン。Python 側を Action Client として呼び出す。
+本プロジェクトのコアとなるソースコードの役割と、重要なポイントについて解説します。
 
 ---
 
-## 1. Python 側のロジック (`action_server.py`)
+## 1. 知能側：bt_core (C++)
 
-ロボットの具体的な動きや時間のかかる処理を担当します。
+`src/bt_core` は Behavior Tree の実行エンジンです。
 
-```python
-# Action Server の核となるコールバック
-def execute_callback(self, goal_handle):
-    # BT から届いたメッセージを取得
-    message = goal_handle.request.message
-    
-    # 処理の進捗をフィードバックとして送信 (1%... 100%)
-    for i in range(1, 6):
-        feedback_msg.progress = i * 20.0
-        goal_handle.publish_feedback(feedback_msg)
-        time.sleep(0.5)
+### main.cpp (司令塔)
+- **パラメータ指定**: `tree_xml` パラメータを通じて、実行時にミッションファイルを切り替えられます。
+- **RosActionNode**: Python 側のアクションサーバーと通信するための C++ ベースクラスです。
+- **Action Registration**: `create_action` によって自動挿入されるコードにより、新しいアクションが自動的に BT 工場に登録されます。
 
-    # 成功を報告
-    goal_handle.succeed()
-    return result
-```
-
-## 2. C++ 側の Behavior Tree (`main.cpp`)
-
-ツリーの構築と、Python Action Server の呼び出しを担当します。`RosActionNode` という便利なクラスを継承しています。
-
-```cpp
-// Python 側の Action を呼び出すための BT ノード定義
-class SaySomethingAction : public RosActionNode<bt_msgs::action::SaySomething>
-{
-    // Goal（リクエスト）の作成
-    bool setGoal(Goal& goal) override {
-        goal.message = "Hello from BT!";
-        return true;
-    }
-
-    // Feedback（途中経過）の受信
-    NodeStatus onFeedback(const std::shared_ptr<const Feedback> f) override {
-        std::cout << "進捗: " << f->progress << "%" << std::endl;
-        return NodeStatus::RUNNING;
-    }
-
-    // Result（最終結果）の受信
-    NodeStatus onResultReceived(const WrappedResult& wr) override {
-        return NodeStatus::SUCCESS;
-    }
-};
-```
-
-## 3. 設計図 (`main.cpp` 内の XML 定義)
-
-```xml
-<Sequence>
-    <SaySomethingAction message="最初の処理を Python で実行"/>
-    <SaySomethingAction message="二番目の処理を Python で実行"/>
-</Sequence>
-```
-C++ で作成した `SaySomethingAction` が XML 上でタグとして使われ、直感的にロボットの挙動を組み立てられます。
+### tree/*.xml (ミッション定義)
+- **nodes_library.xml**: Groot2 で使用するカスタムアクションの定義リストです。
+- **my_tree.xml**: 実際のミッション（ツリーの構造）を記述します。
 
 ---
 
-## なぜこの構成にするのか？
+## 2. 技能側：bt_logic (Python)
 
-- **可視化**: BehaviorTree.CPP v4 を使うことで、Groot2 による強力なデバッグ・監視が可能になります。
-- **柔軟性**: ロジック部分を Python で書くことで、開発スピードが向上し、ライブラリの利用も容易になります。
-- **標準的**: これは ROS 2 のナビゲーションスタック (Nav2) で採用されている世界標準の設計思想です。
+`src/bt_logic` はロボットの各動作（アクション）の実装集です。
+
+### {action_name}_node.py (各動作の独立ノード)
+- **独立プロセス**: 各アクションが一つのノード（プロセス）として独立しています。
+- **execute_callback**: BT からリクエストが来た際に実行される関数です。ここに実際のハードウェア制御コードを記述します。
+
+### launch/action_logic.launch.py (一括起動)
+- `run_logic` コマンドで呼び出されます。
+- `create_action` が新しいアクションを追加するたびに、この Launch ファイルに追記し、一括起動の対象に含めます。
+
+---
+
+## 3. 通信定義：bt_msgs
+
+`src/bt_msgs` は、C++ と Python が会話するための「共通言語」を定義します。
+
+### action/*.action
+- 知能から技能への「リクエスト」、技能から知能への「結果」および「進捗フィードバック」のデータ構造を定義します。
+
+---
+
+## 4. 便利なエイリアス (bashrc_docker)
+
+効率的な開発のために、以下のエイリアスが設定されています。
+
+- `build`: ワークスペース全体をビルド。
+- `src`: ビルド成果物を現在の環境にロード。
+- `run_logic`: すべてのロジックサーバーを起動。
+- `run_bt`: BT エンジン（知能）を起動。
+- `create_action`: アクションマネージャー GUI を起動。
+- `groot2`: Groot2 エディタを起動（ホスト側にインストールされている場合）。

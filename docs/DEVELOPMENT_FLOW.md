@@ -1,90 +1,57 @@
 # 新しい振る舞い（Action）の開発フロー
 
-このドキュメントでは、新しいロボットの動作を追加する際の手順と、設計思想について解説します。
+このドキュメントでは、`create_action` マネージャーを使用して新しいロボット動作を高速に開発する手順を解説します。
 
 ---
 
-## 1. 設計思想：なぜ Action なのか？
+## 1. 開発の 3 ステップ
 
-Behavior Tree (BT) において、各ノードはロボットの **「状態 (State)」** を表します。ROS 2 の Action 通信を使う理由は、BT の要求する以下の特性を満たすためです。
+本環境では、以下の 3 つのステップで新しい動作を追加できます。
 
-- **非同期性**: 動作中に BT をブロックせず、「実行中 (RUNNING)」という状態を維持できる。
-- **中断可能性 (Preemption)**: より優先度の高いイベントが発生した際、実行中の動作を安全にキャンセルできる。
-- **フィードバック**: 動作の進捗を確認し、それに応じた判断ができる。
-
----
-
-## 2. 開発ステップ（具体例：MoveToTarget アクション）
-
-### ステップ 1：通信（Action）の定義
-`src/bt_msgs/action/` に新しい `.action` ファイルを作成し、`CMakeLists.txt` に追記します。
-
-```text
-# MoveToTarget.action
-float32 x
-float32 y
----
-bool success
----
-float32 distance
+### ステップ 1：アクションの定義と自動生成
+まず、`create_action` (GUIマネージャー) を起動します。
+```bash
+create_action
 ```
+1. **名前を入力**: `PascalCase` で入力します（例: `PickUpItem`）。
+2. **ポートを追加**: アクションに渡したいデータ（引数）を定義します。
+3. **実行**: 「アクションを生成・登録する」ボタンを押すと、以下のファイルが自動生成・更新されます。
+   - `src/bt_msgs/action/PickUpItem.action` (定義)
+   - `src/bt_logic/bt_logic/pick_up_item_node.py` (**Pythonロジックの雛形**)
+   - `src/bt_core/src/main.cpp` (C++登録コード)
+   - `src/bt_core/tree/nodes_library.xml` (**Groot2用パレット**)
 
-### ステップ 2：ロジック（Python）の実装
-`src/bt_python_logic` 内で、実際の動き（計算やモーター制御）を担当するサーバーを実装します。
+### ステップ 2：ロジックの実装 (Python)
+自動生成された Python ファイルを開きます。
+`src/bt_logic/bt_logic/pick_up_item_node.py`
 
+`execute_callback` 関数内の以下のコメント部分に、実際のロボット制御コードを記述してください。
 ```python
-def move_to_target_callback(self, goal_handle):
-    target_x = goal_handle.request.x
-    target_y = goal_handle.request.y
-    
-    # ループ内で進捗（残り距離）を計算して送信
-    while dist > 0.1:
-        feedback_msg.distance = current_dist
-        goal_handle.publish_feedback(feedback_msg)
-        time.sleep(0.5)
-
-    goal_handle.succeed()
-    return MoveToTarget.Result(success=True)
+# --- [具体的なロボットのロジックをここに実装してください] ---
+# 例: 腕のモーターを動かす、カメラで物体を認識するなど
+# ------------------------------------------------------------
 ```
 
-### ステップ 3：BT ノード（C++）の実装
-`src/bt_example/src/main.cpp` に、Python 側を呼び出すためのノードを作成します。
-
-```cpp
-class MoveToTargetAction : public RosActionNode<bt_msgs::action::MoveToTarget>
-{
-    // XMLから目標座標(x, y)を受け取るポート定義
-    static PortsList providedPorts() {
-        return providedBasicPorts({ InputPort<float>("x"), InputPort<float>("y") });
-    }
-
-    // Pythonサーバーへ送るゴールの設定
-    bool setGoal(Goal& goal) override {
-        getInput("x", goal.x);
-        getInput("y", goal.y);
-        return true;
-    }
-};
-```
-
-### ステップ 4：工場の登録と XML での使用
-```cpp
-// main関数内での登録
-factory.registerNodeType<MoveToTargetAction>("MoveToTarget", params);
-```
-
-```xml
-<!-- XML上での使用例 -->
-<Sequence>
-    <MoveToTarget x="5.0" y="5.0"/>
-    <SaySomething message="到着しました"/>
-</Sequence>
-```
+### ステップ 3：ツリーの設計と実行
+1. **ビルド**: `build` コマンドでワークスペースをビルドします。
+2. **パレットの読み込み**: Groot2 を開き、`src/bt_core/tree/nodes_library.xml` を読み込みます。
+3. **ツリー作成**: 追加されたアクションをドラッグ＆ドロップしてミッションを組み立てます。
+4. **実行**: `run_logic` と `run_bt` を起動して動作を確認します。
 
 ---
 
-## 3. 開発のコツ
+## 2. アーキテクチャの利点
 
-- **ノードはシンプルに**: 一つのノードに複雑な条件分岐を詰め込まず、「前進する」「挨拶する」といった単純なアクションに分割してください。
-- **再利用性を考える**: 汎用的なアクションを作っておけば、XML を書き換えるだけで様々なミッションに対応できるようになります。
-- **Groot2 で監視する**: 実行中は常に Groot2 で接続し、視覚的にデバッグを行ってください。
+なぜアクションを独立したノードに分けるのか？
+
+- **安全設計**: あるアクションがクラッシュしても、他のアクションや BT エンジンは走り続けます。
+- **デバッグの容易さ**: `ros2 action send_goal` コマンドを使用して、BT を通さずにアクション単体でのテストが可能です。
+- **開発の分担**: C++ のエンジン側を触ることなく、Python 側だけで次々と新しい機能を追加できます。
+
+---
+
+## 3. 開発のヒント
+
+- **ノードは単機能に**: 「物体を探して掴む」という一つのノードにするのではなく、「探すノード」と「掴むノード」に分けると、BT 側で柔軟に組み替えが可能になります。
+- **フィードバックの活用**: 時間のかかる動作（長い距離の移動など）では、Python 側から `publish_feedback` を送ることで、進捗を外部から監視できます。
+- **削除も簡単**: アクションが不要になったら、`create_action` の「Manage」タブから一括削除できます。
