@@ -26,15 +26,17 @@ def add_to_file_after_marker(file_path, content, marker):
             if marker in line:
                 f.write(content)
 
-def add_to_import_line(file_path, new_item, marker):
+def update_tree_path_in_cpp(file_path, new_xml_name):
+    if not os.path.exists(file_path):
+        return
     with open(file_path, 'r') as f:
-        lines = f.readlines()
+        content = f.read()
+    
+    new_path = f'/ros2_ws/src/bt_example/tree/{new_xml_name}'
+    updated_content = re.sub(r'createTreeFromFile\(".+?"\)', f'createTreeFromFile("{new_path}")', content)
+    
     with open(file_path, 'w') as f:
-        for line in lines:
-            if marker in line and new_item not in line:
-                f.write(line.strip() + f", {new_item}\n")
-            else:
-                f.write(line)
+        f.write(updated_content)
 
 class ActionCreatorGUI(QWidget):
     def __init__(self):
@@ -42,7 +44,7 @@ class ActionCreatorGUI(QWidget):
         self.initUI()
 
     def initUI(self):
-        self.setWindowTitle("BT Action Scaffolder (PySide6)")
+        self.setWindowTitle("BT Action Scaffolder (Independent Nodes)")
         self.setMinimumSize(600, 900)
         self.setStyleSheet("""
             QWidget { background-color: #ffffff; color: #333333; font-family: 'Noto Sans CJK JP', 'Meiryo', sans-serif; }
@@ -75,14 +77,14 @@ class ActionCreatorGUI(QWidget):
         help_box = QFrame()
         help_box.setObjectName("HelpBox")
         help_layout = QVBoxLayout(help_box)
-        help_title = QLabel("💡 使い方とルール")
+        help_title = QLabel("💡 独立ノード構成システム")
         help_title.setStyleSheet("font-weight: bold; color: #f08c00;")
         help_layout.addWidget(help_title)
         
         usage_text = (
-            "・<b>Action生成</b>: 下のフォームからアクションを追加します。\n"
-            "・<b>ツリー管理</b>: 名前を指定してXMLを作成できます。実行時にツリーを切り替えるには以下のように実行します：\n"
-            "  <code>ros2 run bt_example bt_node --ros-args -p tree_xml:=/ros2_ws/src/bt_example/tree/your_tree.xml</code>"
+            "・<b>Action生成</b>: アクションごとに独立したPythonノードファイルが生成されます。\n"
+            "・<b>自動登録</b>: setup.pyとLaunchファイルが自動更新されます。\n"
+            "・<b>実行</b>: ロジックサーバーを一括起動するには <code>run_logic</code> を実行してください。"
         )
         help_desc = QLabel(usage_text)
         help_desc.setWordWrap(True)
@@ -91,7 +93,6 @@ class ActionCreatorGUI(QWidget):
         c_layout.addWidget(help_box)
         c_layout.addSpacing(20)
 
-        # ツリーファイル名入力
         c_layout.addWidget(QLabel("<b>Tree XML Filename:</b>"))
         self.tree_name_input = QLineEdit()
         self.tree_name_input.setText("my_tree.xml")
@@ -196,7 +197,8 @@ class ActionCreatorGUI(QWidget):
             with open(tree_path, 'w') as f:
                 f.write(empty_xml)
             
-            QMessageBox.information(self, "成功", f"'{tree_name}' を作成しました。\n実行時にこのファイルを指定してください。")
+            update_tree_path_in_cpp("src/bt_example/src/main.cpp", tree_name)
+            QMessageBox.information(self, "成功", f"'{tree_name}' を作成しました。")
 
     def generate(self):
         name = self.name_input.text().strip()
@@ -216,9 +218,10 @@ class ActionCreatorGUI(QWidget):
                 QMessageBox.information(self, "成功", f"パレットに '{name}' を追加しました。")
             else:
                 self.create_action_files(name, fields)
-                QMessageBox.information(self, "成功", f"アクション '{name}' の全生成が完了しました！")
+                QMessageBox.information(self, "成功", f"アクション '{name}' の生成が完了しました！")
         except Exception as e:
-            QMessageBox.critical(self, "エラー", str(e))
+            import traceback
+            QMessageBox.critical(self, "エラー", str(e) + "\n" + traceback.format_exc())
 
     def update_palette_only(self, name, fields):
         palette_path = "src/bt_example/tree/nodes_library.xml"
@@ -238,6 +241,7 @@ class ActionCreatorGUI(QWidget):
 
     def create_action_files(self, name, fields):
         snake_name = camel_to_snake(name)
+        node_exec_name = f"{snake_name}_node"
 
         # 1. .action
         os.makedirs("src/bt_msgs/action", exist_ok=True)
@@ -251,21 +255,61 @@ class ActionCreatorGUI(QWidget):
         # 2. CMake
         add_to_file_after_marker("src/bt_msgs/CMakeLists.txt", f'  "action/{name}.action"\n', 'rosidl_generate_interfaces(${PROJECT_NAME}')
 
-        # 3. Python
-        py_path = "src/bt_python_logic/bt_python_logic/action_server.py"
-        add_to_import_line(py_path, name, "from bt_msgs.action import")
-        add_to_file_after_marker(py_path, f"        self._{snake_name}_server = ActionServer(self, {name}, '{snake_name}', self.{snake_name}_callback)\n", "def __init__(self):")
+        # 3. Python Independent Node
+        py_path = f"src/bt_python_logic/bt_python_logic/{node_exec_name}.py"
+        arg_gets = "\n        ".join([f"{fname} = goal_handle.request.{fname}" for f in fields for fname, ftype in [f.split(':')]])
         
-        cb_content = f"""    def {snake_name}_callback(self, goal_handle):
-        self.get_logger().info('{name} started')
+        node_content = f"""import time
+import rclpy
+from rclpy.action import ActionServer
+from rclpy.node import Node
+from bt_msgs.action import {name}
+
+class {name}Node(Node):
+    def __init__(self):
+        super().__init__('{node_exec_name}')
+        self._action_server = ActionServer(
+            self, {name}, '{snake_name}', self.execute_callback)
+        self.get_logger().info('{name} Node initialized')
+
+    def execute_callback(self, goal_handle):
+        self.get_logger().info('Executing {name}...')
+        {arg_gets}
+        
         # TODO: 具体的なロジックをここに実装
+        
         goal_handle.succeed()
         return {name}.Result(success=True)
 
-"""
-        add_to_file_after_marker(py_path, cb_content, "class MultiActionServer(Node):")
+def main(args=None):
+    rclpy.init(args=args)
+    node = {name}Node()
+    rclpy.spin(node)
+    rclpy.shutdown()
 
-        # 4. C++
+if __name__ == '__main__':
+    main()
+"""
+        with open(py_path, 'w') as f:
+            f.write(node_content)
+
+        # 4. setup.py Entry Point
+        setup_path = "src/bt_python_logic/setup.py"
+        entry_line = f"            '{node_exec_name} = bt_python_logic.{node_exec_name}:main',\n"
+        add_to_file_after_marker(setup_path, entry_line, "# --- [CONSOLE_SCRIPTS_MARKER] ---")
+
+        # 5. Launch File
+        launch_path = "src/bt_python_logic/launch/action_logic.launch.py"
+        launch_node = f"""        Node(
+            package='bt_python_logic',
+            executable='{node_exec_name}',
+            name='{node_exec_name}',
+            output='screen'
+        ),
+"""
+        add_to_file_after_marker(launch_path, launch_node, "# --- [ACTION_NODES_MARKER] ---")
+
+        # 6. C++ Code
         cpp_path = "src/bt_example/src/main.cpp"
         add_to_file_after_marker(cpp_path, f'#include <bt_msgs/action/{snake_name}.hpp>\n', "#include <rclcpp/rclcpp.hpp>")
         
@@ -302,7 +346,7 @@ public:
 """
         add_to_file_after_marker(cpp_path, reg_content, "// --- [ACTION_REGISTRATION_MARKER] ---")
 
-        # 5. Palette Update
+        # 7. Palette Update
         self.update_palette_only(name, fields)
 
 if __name__ == "__main__":
