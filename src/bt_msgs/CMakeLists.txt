@@ -6,7 +6,7 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(action_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
-  "action/TekitoAction2.action"
+  "srv/ConditionCheck.srv"
   "action/TekitoAction.action"
   "action/CleanRoom.action"
   "action/SaySomething.action"

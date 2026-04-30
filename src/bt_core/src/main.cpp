@@ -9,7 +9,47 @@
 #include <bt_msgs/action/tekito_action.hpp>
 #include <rclcpp/rclcpp.hpp>
 
+#include <bt_msgs/srv/condition_check.hpp>
+
 using namespace BT;
+
+// =============================================================================
+// サービス通信用ベースクラス (判定ノード用)
+// =============================================================================
+template <class ServiceT>
+class RosServiceNode : public BT::ConditionNode {
+public:
+    RosServiceNode(const std::string& name, const BT::NodeConfig& conf, const RosNodeParams& params)
+        : BT::ConditionNode(name, conf), node_(params.nh) {
+        // ノード名と同じ名前のサービスを呼ぶ
+        client_ = node_->create_client<ServiceT>(name);
+    }
+
+    BT::NodeStatus tick() override {
+        if (!client_->wait_for_service(std::chrono::milliseconds(500))) {
+            return BT::NodeStatus::FAILURE;
+        }
+
+        auto request = std::make_shared<typename ServiceT::Request>();
+        if (!setRequest(request)) return BT::NodeStatus::FAILURE;
+
+        auto future = client_->async_send_request(request);
+        // 判定ノードは即座に結果が欲しいので同期的に待つ
+        if (rclcpp::spin_until_future_complete(node_, future, std::chrono::seconds(1)) != rclcpp::FutureReturnCode::SUCCESS) {
+            return BT::NodeStatus::FAILURE;
+        }
+
+        auto response = future.get();
+        return onResponseReceived(response) ? BT::NodeStatus::SUCCESS : BT::NodeStatus::FAILURE;
+    }
+
+    virtual bool setRequest(std::shared_ptr<typename ServiceT::Request>& request) = 0;
+    virtual bool onResponseReceived(const std::shared_ptr<typename ServiceT::Response>& response) = 0;
+
+protected:
+    rclcpp::Node::SharedPtr node_;
+    typename rclcpp::Client<ServiceT>::SharedPtr client_;
+};
 
 // =============================================================================
 // アクションノードの定義
