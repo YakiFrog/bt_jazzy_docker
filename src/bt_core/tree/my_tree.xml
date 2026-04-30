@@ -9,11 +9,16 @@
       <MoveToTarget x="-2.0"
                     y="4.0"/>
       <SaySomething message="すべての目標地点を回りました。ミッション終了。"/>
+      <CheckBattery tekito=""/>
     </Sequence>
   </BehaviorTree>
 
   <!-- Description of Node Models (used by Groot) -->
   <TreeNodesModel>
+    <Condition ID="CheckBattery">
+      <input_port name="tekito"
+                  type="float"/>
+    </Condition>
     <Action ID="MoveToTarget">
       <input_port name="x"
                   type="float"/>

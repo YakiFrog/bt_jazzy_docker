@@ -52,6 +52,8 @@ protected:
     typename rclcpp::Client<ServiceT>::SharedPtr client_;
 };
 
+// --- [NODE_CLASS_MARKER] ---
+
 class CheckBatteryCondition : public RosServiceNode<bt_msgs::srv::CheckBattery>
 {
 public:
@@ -59,7 +61,7 @@ public:
       : RosServiceNode<bt_msgs::srv::CheckBattery>(name, conf, params) {}
 
     static PortsList providedPorts() {
-        return providedBasicPorts({ InputPort<float>("tekito") });
+        return { InputPort<float>("tekito") };
     }
 
     bool setRequest(std::shared_ptr<bt_msgs::srv::CheckBattery::Request>& request) override {
