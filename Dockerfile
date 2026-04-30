@@ -34,6 +34,7 @@ RUN apt-get update && apt-get install -y \
     libxcb-shm0 \
     libxkbcommon0 \
     fonts-noto-cjk \
+    fonts-noto-color-emoji \
     && rm -rf /var/lib/apt/lists/*
 
 # Install PySide6
