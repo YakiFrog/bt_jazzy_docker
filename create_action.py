@@ -77,7 +77,10 @@ class RosWorker(QObject):
             self.log_signal.emit(f"Error: {str(e)}")
 
     def action_feedback_cb(self, feedback_msg):
-        self.log_signal.emit(f"Feedback: {feedback_msg.feedback.progress}%")
+        # フィードバックの内容を動的に表示
+        fb = feedback_msg.feedback
+        fields = [f"{attr}: {getattr(fb, attr)}" for attr in fb.get_fields_and_field_types().keys()]
+        self.log_signal.emit(f"Feedback >> {' | '.join(fields)}")
 
     def action_goal_response_cb(self, future):
         goal_handle = future.result()
