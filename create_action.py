@@ -315,8 +315,8 @@ class ActionManagerGUI(QWidget):
             add_to_file_after_marker(cpp_path, f'#include <bt_msgs/srv/{snake}.hpp>\n', "#include <bt_msgs/srv/condition_check.hpp>")
             ports = ", ".join([f'InputPort<{cpp_t_map[f.split(":")[1]]}>("{f.split(":")[0]}")' for f in fields])
             sets = "\n        ".join([f'getInput("{f.split(":")[0]}", request->{f.split(":")[0]});' for f in fields])
-            class_code = f"class {name}Condition : public RosServiceNode<bt_msgs::srv::{name}>\n{{\npublic:\n    {name}Condition(const std::string& name, const NodeConfig& conf, const RosNodeParams& params) : RosServiceNode<bt_msgs::srv::{name}>(name, conf, params) {{}}\n    static PortsList providedPorts() {{ return providedBasicPorts({{ {ports} }}); }}\n    bool setRequest(std::shared_ptr<bt_msgs::srv::{name}::Request>& request) override {{ {sets}\n        return true; }}\n    bool onResponseReceived(const std::shared_ptr<bt_msgs::srv::{name}::Response>& response) override {{ return response->result; }}\n}};\n\n"
-            add_to_file_after_marker(cpp_path, class_code, "using namespace BT;")
+            class_code = f"class {name}Condition : public RosServiceNode<bt_msgs::srv::{name}>\n{{\npublic:\n    {name}Condition(const std::string& name, const NodeConfig& conf, const RosNodeParams& params) : RosServiceNode<bt_msgs::srv::{name}>(name, conf, params) {{}}\n    static PortsList providedPorts() {{ return {{ {ports} }}; }}\n    bool setRequest(std::shared_ptr<bt_msgs::srv::{name}::Request>& request) override {{ {sets}\n        return true; }}\n    bool onResponseReceived(const std::shared_ptr<bt_msgs::srv::{name}::Response>& response) override {{ return response->result; }}\n}};\n\n"
+            add_to_file_after_marker(cpp_path, class_code, "// --- [NODE_CLASS_MARKER] ---")
             add_to_file_after_marker(cpp_path, f'    params.default_port_value = "{snake}";\n    factory.registerNodeType<{name}Condition>("{name}", params);\n', "[ACTION_REGISTRATION_MARKER]")
         else:
             os.makedirs("src/bt_msgs/action", exist_ok=True)
@@ -331,7 +331,7 @@ class ActionManagerGUI(QWidget):
             ports = ", ".join([f'InputPort<{cpp_t_map[f.split(":")[1]]}>("{f.split(":")[0]}")' for f in fields])
             sets = "\n        ".join([f'getInput("{f.split(":")[0]}", goal.{f.split(":")[0]});' for f in fields])
             class_code = f"class {name}Action : public RosActionNode<bt_msgs::action::{name}>\n{{\npublic:\n    {name}Action(const std::string& name, const NodeConfig& conf, const RosNodeParams& params) : RosActionNode<bt_msgs::action::{name}>(name, conf, params) {{}}\n    static PortsList providedPorts() {{ return providedBasicPorts({{ {ports} }}); }}\n    bool setGoal(Goal& goal) override {{ {sets}\n        return true; }}\n    NodeStatus onResultReceived(const WrappedResult& wr) override {{ return wr.result->success ? NodeStatus::SUCCESS : NodeStatus::FAILURE; }}\n}};\n\n"
-            add_to_file_after_marker(cpp_path, class_code, "using namespace BT;")
+            add_to_file_after_marker(cpp_path, class_code, "// --- [NODE_CLASS_MARKER] ---")
             add_to_file_after_marker(cpp_path, f'    params.default_port_value = "{snake}";\n    factory.registerNodeType<{name}Action>("{name}", params);\n', "[ACTION_REGISTRATION_MARKER]")
         add_to_file_after_marker("src/bt_logic/setup.py", f"            '{node_exec_name} = bt_logic.{node_exec_name}:main',\n", "[CONSOLE_SCRIPTS_MARKER]")
         launch_node = f"        Node(package='bt_logic', executable='{node_exec_name}', name='{node_exec_name}', output='screen'),\n"
