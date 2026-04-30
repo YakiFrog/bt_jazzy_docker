@@ -2,7 +2,7 @@ import os
 from glob import glob
 from setuptools import setup
 
-package_name = 'bt_python_logic'
+package_name = 'bt_logic'
 
 setup(
     name=package_name,
@@ -25,11 +25,11 @@ setup(
     entry_points={
         'console_scripts': [
             # --- [CONSOLE_SCRIPTS_MARKER] ---
-            'tekito_action_node = bt_python_logic.tekito_action_node:main',
-            'clean_room_node = bt_python_logic.clean_room_node:main',
-            'pick_up_item_node = bt_python_logic.pick_up_item_node:main',
-            'say_something_node = bt_python_logic.say_something_node:main',
-            'move_to_target_node = bt_python_logic.move_to_target_node:main',
+            'tekito_action_node = bt_logic.tekito_action_node:main',
+            'clean_room_node = bt_logic.clean_room_node:main',
+            'pick_up_item_node = bt_logic.pick_up_item_node:main',
+            'say_something_node = bt_logic.say_something_node:main',
+            'move_to_target_node = bt_logic.move_to_target_node:main',
         ],
     },
 )

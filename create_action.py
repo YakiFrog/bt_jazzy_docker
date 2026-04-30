@@ -187,7 +187,7 @@ class ActionManagerGUI(QWidget):
         # 2. CMake
         add_to_file_after_marker("src/bt_msgs/CMakeLists.txt", f'  "action/{name}.action"\n', "rosidl_generate_interfaces(${PROJECT_NAME}")
         # 3. Python Node
-        os.makedirs("src/bt_python_logic/bt_python_logic", exist_ok=True)
+        os.makedirs("src/bt_logic/bt_logic", exist_ok=True)
         args = "\n        ".join([f"{f.split(':')[0]} = goal_handle.request.{f.split(':')[0]}" for f in fields])
         node_content = f"""import time
 import rclpy
@@ -227,20 +227,20 @@ def main(args=None):
 if __name__ == '__main__':
     main()
 """
-        with open(f"src/bt_python_logic/bt_python_logic/{node_name}.py", 'w') as f:
+        with open(f"src/bt_logic/bt_logic/{node_name}.py", 'w') as f:
             f.write(node_content)
 
         # 4. setup.py
-        add_to_file_after_marker("src/bt_python_logic/setup.py", f"            '{node_name} = bt_python_logic.{node_name}:main',\n", "[CONSOLE_SCRIPTS_MARKER]")
+        add_to_file_after_marker("src/bt_logic/setup.py", f"            '{node_name} = bt_logic.{node_name}:main',\n", "[CONSOLE_SCRIPTS_MARKER]")
         # 5. Launch
         launch_node = f"""        Node(
-            package='bt_python_logic',
+            package='bt_logic',
             executable='{node_name}',
             name='{node_name}',
             output='screen'
         ),
 """
-        add_to_file_after_marker("src/bt_python_logic/launch/action_logic.launch.py", launch_node, "[ACTION_NODES_MARKER]")
+        add_to_file_after_marker("src/bt_logic/launch/action_logic.launch.py", launch_node, "[ACTION_NODES_MARKER]")
         # 6. C++
         add_to_file_after_marker("src/bt_core/src/main.cpp", f'#include <bt_msgs/action/{snake}.hpp>\n', "#include <rclcpp/rclcpp.hpp>")
         cpp_t = {"float32": "float", "int32": "int", "string": "std::string", "bool": "bool"}
@@ -260,16 +260,16 @@ if __name__ == '__main__':
         
         try:
             # Delete files
-            paths = [f"src/bt_msgs/action/{name}.action", f"src/bt_python_logic/bt_python_logic/{snake}_node.py"]
+            paths = [f"src/bt_msgs/action/{name}.action", f"src/bt_logic/bt_logic/{snake}_node.py"]
             for p in paths:
                 if os.path.exists(p): os.remove(p)
             
             # Remove from config files (simple line removal)
             remove_from_file_by_pattern("src/bt_msgs/CMakeLists.txt", f'"{name}.action"')
-            remove_from_file_by_pattern("src/bt_python_logic/setup.py", f"'{snake}_node")
+            remove_from_file_by_pattern("src/bt_logic/setup.py", f"'{snake}_node")
             
             # Better removal for Launch File (Removes the entire Node block)
-            launch_path = "src/bt_python_logic/launch/action_logic.launch.py"
+            launch_path = "src/bt_logic/launch/action_logic.launch.py"
             if os.path.exists(launch_path):
                 with open(launch_path, 'r') as f: content = f.read()
                 content = re.sub(rf'        Node\(.*?executable=\'{snake}_node\'.*?\),?\n', '', content, flags=re.DOTALL)

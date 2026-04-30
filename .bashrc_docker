@@ -14,7 +14,7 @@ if [ -f "/ros2_ws/install/setup.bash" ]; then
 fi
 
 # サンプル実行用
-alias run_logic='ros2 launch bt_python_logic action_logic.launch.py'
+alias run_logic='ros2 launch bt_logic action_logic.launch.py'
 alias run_bt='ros2 run bt_core bt_node'
 alias create_action='/ros2_ws/create_action.py'
 
