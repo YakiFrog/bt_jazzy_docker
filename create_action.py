@@ -189,8 +189,47 @@ class ActionManagerGUI(QWidget):
         # 3. Python Node
         os.makedirs("src/bt_python_logic/bt_python_logic", exist_ok=True)
         args = "\n        ".join([f"{f.split(':')[0]} = goal_handle.request.{f.split(':')[0]}" for f in fields])
+        node_content = f"""import time
+import rclpy
+from rclpy.action import ActionServer
+from rclpy.node import Node
+from bt_msgs.action import {name}
+
+class {name}Node(Node):
+    def __init__(self):
+        super().__init__('{node_name}')
+        self._action_server = ActionServer(
+            self, {name}, '{snake}', self.execute_callback)
+        self.get_logger().info('{name} Node initialized')
+
+    def execute_callback(self, goal_handle):
+        self.get_logger().info('Executing {name}...')
+        {args}
+        
+        # --- [具体的なロボットのロジックをここに実装してください] ---
+        # 例: モーターの駆動コマンドをパブリッシュする、センサー値を読み取るなど
+        #
+        # for i in range(1, 11):
+        #     feedback = {name}.Feedback(progress=i * 10.0)
+        #     goal_handle.publish_feedback(feedback)
+        #     time.sleep(0.5)
+        # ------------------------------------------------------------
+        
+        goal_handle.succeed()
+        return {name}.Result(success=True)
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = {name}Node()
+    rclpy.spin(node)
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+"""
         with open(f"src/bt_python_logic/bt_python_logic/{node_name}.py", 'w') as f:
-            f.write(f"import time\nimport rclpy\nfrom rclpy.action import ActionServer\nfrom rclpy.node import Node\nfrom bt_msgs.action import {name}\n\nclass {name}Node(Node):\n    def __init__(self):\n        super().__init__('{node_name}')\n        self._action_server = ActionServer(self, {name}, '{snake}', self.execute_callback)\n        self.get_logger().info('{name} Node initialized')\n\n    def execute_callback(self, goal_handle):\n        self.get_logger().info('Executing {name}...')\n        {args}\n        goal_handle.succeed()\n        return {name}.Result(success=True)\n\ndef main(args=None):\n    rclpy.init(args=args); node = {name}Node(); rclpy.spin(node); rclpy.shutdown()\n\nif __name__ == '__main__': main()")
+            f.write(node_content)
+
         # 4. setup.py
         add_to_file_after_marker("src/bt_python_logic/setup.py", f"            '{node_name} = bt_python_logic.{node_name}:main',\n", "[CONSOLE_SCRIPTS_MARKER]")
         # 5. Launch
