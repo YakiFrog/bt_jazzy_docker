@@ -22,5 +22,6 @@ alias node_manager='/ros2_ws/bt_node_manager.py'
 # 便利設定
 export RCUTILS_COLORIZED_OUTPUT=1
 echo "--- BT Dev Environment Loaded ---"
-echo "Available aliases: build, src, run_logic, run_bt"
+alias reload='ros2 param load /move_to_target_node /ros2_ws/src/bt_logic/config/logic_params.yaml'
+echo "Available aliases: build, src, run_logic, run_bt, reload"
 alias create_action='node_manager'

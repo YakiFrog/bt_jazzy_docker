@@ -62,14 +62,14 @@ class MoveToTargetNode(Node):
         rate = self.create_rate(10) # 10Hz
         count = 0
         
-        # パラメータの取得
-        max_linear_speed = self.get_parameter('max_linear_speed').value
-        kp_linear = self.get_parameter('kp_linear').value
-        kp_angular = self.get_parameter('kp_angular').value
-        goal_tolerance = self.get_parameter('goal_tolerance').value
-        yaw_tolerance = self.get_parameter('yaw_tolerance').value
-
         while rclpy.ok():
+            # 常に最新のパラメータを反映（Actionの途中でも変更可能に）
+            max_linear_speed = self.get_parameter('max_linear_speed').value
+            kp_linear = self.get_parameter('kp_linear').value
+            kp_angular = self.get_parameter('kp_angular').value
+            goal_tolerance = self.get_parameter('goal_tolerance').value
+            yaw_tolerance = self.get_parameter('yaw_tolerance').value
+
             # 1. 目標までの距離と角度を計算
             dx = target_x - self.current_x
             dy = target_y - self.current_y
