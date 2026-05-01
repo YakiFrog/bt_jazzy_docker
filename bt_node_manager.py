@@ -206,11 +206,24 @@ class ActionManagerGUI(QWidget):
         self.test_params_container = QWidget(); self.test_params_layout = QVBoxLayout(self.test_params_container)
         layout.addWidget(self.test_params_container)
         self.test_btn = QPushButton("実行 (Run Test)"); self.test_btn.setObjectName("TestBtn"); self.test_btn.clicked.connect(self.run_test); layout.addWidget(self.test_btn)
-        layout.addSpacing(15); layout.addWidget(QLabel("<b>Execution Log:</b>"))
-        self.test_log = QTextEdit(); self.test_log.setReadOnly(True); self.test_log.setStyleSheet("background-color: #f8f9fa; color: #1e2125;")
+        layout.addSpacing(15)
+        log_header_layout = QHBoxLayout()
+        log_header_layout.addWidget(QLabel("<b>Execution Log:</b>"))
+        clear_log_btn = QPushButton("Clear")
+        clear_log_btn.setFixedWidth(80)
+        clear_log_btn.clicked.connect(self.clear_test_log)
+        log_header_layout.addWidget(clear_log_btn, alignment=Qt.AlignRight)
+        layout.addLayout(log_header_layout)
+
+        self.test_log = QTextEdit()
+        self.test_log.setReadOnly(True)
+        self.test_log.setStyleSheet("background-color: #f8f9fa; color: #1e2125;")
         layout.addWidget(self.test_log)
         self.refresh_test_selector()
         return tab
+
+    def clear_test_log(self):
+        self.test_log.clear()
 
     def addFieldRow(self):
         row = QWidget(); r_layout = QHBoxLayout(row)
