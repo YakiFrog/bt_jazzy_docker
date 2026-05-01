@@ -4,12 +4,9 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 
 def generate_launch_description():
-    # パラメータファイルのパスを取得
-    config_path = os.path.join(
-        get_package_share_directory('bt_logic'),
-        'config',
-        'logic_params.yaml'
-    )
+    # パラメータファイルのパスをソースディレクトリから直接指定
+    config_dir = '/ros2_ws/src/bt_logic/config'
+    config_path = os.path.join(config_dir, 'logic_params.yaml')
 
     return LaunchDescription([
         # --- [ACTION_NODES_MARKER] ---
