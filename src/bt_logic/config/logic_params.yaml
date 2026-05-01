@@ -3,12 +3,12 @@
 move_to_target_node:
   ros__parameters:
     # トピック名
-    odom_topic: "/sirius3/odom"
+    odom_topic: "/odom/filtered"
     cmd_vel_topic: "/cmd_vel"
     
     # 制御パラメータ
-    max_linear_speed: 0.3
-    max_angular_speed: 0.8
+    max_linear_speed: 0.5
+    max_angular_speed: 0.6
     kp_linear: 0.2
     kp_angular: 0.8
     goal_tolerance: 0.1
