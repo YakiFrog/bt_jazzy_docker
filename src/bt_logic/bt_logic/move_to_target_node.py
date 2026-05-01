@@ -81,11 +81,12 @@ class MoveToTargetNode(Node):
             yaw_error = math.atan2(math.sin(yaw_error), math.cos(yaw_error))
             
             # 2. フィードバック送信
+            dist = round(dist, 3)
             status_msg = ""
             if abs(yaw_error) > yaw_tolerance:
-                status_msg = f"Rotating (Err: {yaw_error:.2f})"
+                status_msg = f"Rotating (Err: {yaw_error:.3f})"
             else:
-                status_msg = f"Moving (Dist: {dist:.2f})"
+                status_msg = f"Moving (Dist: {dist:.3f})"
             
             goal_handle.publish_feedback(MoveToTarget.Feedback(distance=dist, status=status_msg))
             
