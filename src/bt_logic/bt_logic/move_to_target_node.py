@@ -60,6 +60,7 @@ class MoveToTargetNode(Node):
         self.get_logger().info(f'Moving to ({target_x}, {target_y})')
         
         rate = self.create_rate(10) # 10Hz
+        count = 0
         
         # パラメータの取得
         max_linear_speed = self.get_parameter('max_linear_speed').value
@@ -104,7 +105,7 @@ class MoveToTargetNode(Node):
             
             if abs(yaw_error) > yaw_tolerance:
                 # 旋回中
-                twist.angular.z = 0.3 if yaw_error > 0 else -0.3 # 0.5から0.3へ減速して安定化
+                twist.angular.z = 0.3 if yaw_error > 0 else -0.3
                 twist.linear.x = 0.0
             else:
                 # 前進中
@@ -113,10 +114,11 @@ class MoveToTargetNode(Node):
                 
             self.cmd_vel_pub.publish(twist)
             
-            # ターミナルデバッグ用
-            if int(time.time() * 10) % 10 == 0: # 1.0秒おきに表示
+            # ターミナルデバッグ用 (10Hzなので10回に1回 = 1秒おき)
+            if count % 10 == 0:
                 self.get_logger().info(f"DIST: {dist:.2f}m, YAW_ERR: {yaw_error:.2f}rad -> V: {twist.linear.x:.2f}, W: {twist.angular.z:.2f}")
             
+            count += 1
             rate.sleep()
             
         self.stop_robot()
