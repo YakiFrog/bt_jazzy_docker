@@ -13,3 +13,11 @@ move_to_target_node:
     kp_angular: 0.8
     goal_tolerance: 0.1
     yaw_tolerance: 0.2
+
+rotate_degrees_node:
+  ros__parameters:
+    odom_topic: "/odom/filtered"
+    cmd_vel_topic: "/cmd_vel"
+    max_angular_speed: 0.5
+    kp_angular: 1.0
+    yaw_tolerance: 0.05

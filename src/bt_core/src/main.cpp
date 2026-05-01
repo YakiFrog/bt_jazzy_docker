@@ -7,6 +7,7 @@
 #include <bt_msgs/action/pick_up_item.hpp>
 #include <bt_msgs/action/clean_room.hpp>
 #include <bt_msgs/action/tekito_action.hpp>
+#include <bt_msgs/action/rotate_degrees.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include <bt_msgs/srv/condition_check.hpp>
@@ -186,6 +187,26 @@ public:
     }
 };
 
+class RotateDegreesAction : public RosActionNode<bt_msgs::action::RotateDegrees>
+{
+public:
+    RotateDegreesAction(const std::string& name, const NodeConfig& conf, const RosNodeParams& params)
+      : RosActionNode<bt_msgs::action::RotateDegrees>(name, conf, params) {}
+
+    static PortsList providedPorts() {
+        return providedBasicPorts({ InputPort<float>("degrees", 0.0, "回転させる角度 (度)") });
+    }
+
+    bool setGoal(Goal& goal) override {
+        if (!getInput("degrees", goal.degrees)) return false;
+        return true;
+    }
+
+    NodeStatus onResultReceived(const WrappedResult& wr) override {
+        return wr.result->success ? NodeStatus::SUCCESS : NodeStatus::FAILURE;
+    }
+};
+
 // =============================================================================
 // メイン関数
 // =============================================================================
@@ -221,6 +242,9 @@ int main(int argc, char** argv)
 
     params.default_port_value = "move_to_target";
     factory.registerNodeType<MoveToTargetAction>("MoveToTarget", params);
+
+    params.default_port_value = "rotate_degrees";
+    factory.registerNodeType<RotateDegreesAction>("RotateDegrees", params);
 
     // XML ファイルからツリーを読み込む
     std::cout << "Loading Tree from: " << tree_xml_path << std::endl;

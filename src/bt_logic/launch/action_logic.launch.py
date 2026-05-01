@@ -16,4 +16,5 @@ def generate_launch_description():
         Node(package='bt_logic', executable='pick_up_item_node', name='pick_up_item_node', output='screen', parameters=[config_path]),
         Node(package='bt_logic', executable='say_something_node', name='say_something_node', output='screen', parameters=[config_path]),
         Node(package='bt_logic', executable='move_to_target_node', name='move_to_target_node', output='screen', parameters=[config_path]),
+        Node(package='bt_logic', executable='rotate_degrees_node', name='rotate_degrees_node', output='screen', parameters=[config_path]),
     ])

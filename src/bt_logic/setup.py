@@ -33,6 +33,7 @@ setup(
             'pick_up_item_node = bt_logic.pick_up_item_node:main',
             'say_something_node = bt_logic.say_something_node:main',
             'move_to_target_node = bt_logic.move_to_target_node:main',
+            'rotate_degrees_node = bt_logic.rotate_degrees_node:main',
         ],
     },
 )
