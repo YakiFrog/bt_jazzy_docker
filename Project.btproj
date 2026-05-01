@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <root BTCPP_format="4" project_name="Project">
-    <include path="src/bt_example/tree/my_tree.xml"/>
-    <include path="src/bt_example/tree/my_tree2.xml"/>
+    <include path="trees/my_tree.xml"/>
+    <include path="trees/nodes_library.xml"/>
     <!-- Description of Node Models (used by Groot) -->
     <TreeNodesModel>
+        <Condition ID="CheckBattery">
+            <input_port name="tekito" type="float"/>
+        </Condition>
         <Action ID="CleanRoom">
             <input_port name="whichroom" type="std::string"/>
         </Action>

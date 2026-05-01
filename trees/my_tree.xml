@@ -9,7 +9,7 @@
       <MoveToTarget x="-2.0"
                     y="4.0"/>
       <SaySomething message="すべての目標地点を回りました。ミッション終了。"/>
-      <CheckBattery tekito=""/>
+      <CheckBattery tekito="10.0"/>
     </Sequence>
   </BehaviorTree>
 
