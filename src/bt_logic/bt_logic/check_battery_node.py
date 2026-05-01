@@ -14,8 +14,8 @@ class CheckBatteryNode(Node):
         self.battery_level -= 5.0
         if self.battery_level < 0: self.battery_level = 0.0
 
-        # 10% 以下なら失敗 (False)
-        threshold = 10.0
+        # request.tekito % 以下なら失敗 (False)
+        threshold = request.tekito
         is_ok = self.battery_level > threshold
         
         self.get_logger().info(f'Battery Level: {self.battery_level}% (Threshold: {threshold}%) -> Result: {is_ok}')
