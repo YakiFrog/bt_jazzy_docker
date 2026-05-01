@@ -1,0 +1,15 @@
+# BT Logic Nodes Configuration
+
+move_to_target_node:
+  ros__parameters:
+    # トピック名
+    odom_topic: "/odom"
+    cmd_vel_topic: "/cmd_vel"
+    
+    # 制御パラメータ
+    max_linear_speed: 0.3
+    max_angular_speed: 0.8
+    kp_linear: 0.2
+    kp_angular: 0.8
+    goal_tolerance: 0.1
+    yaw_tolerance: 0.2

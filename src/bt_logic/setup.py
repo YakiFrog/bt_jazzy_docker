@@ -14,6 +14,8 @@ setup(
         ('share/' + package_name, ['package.xml']),
         # Launchファイルをインストール対象に含める
         (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
+        # Configファイルをインストール対象に含める
+        (os.path.join('share', package_name, 'config'), glob('config/*.yaml')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,

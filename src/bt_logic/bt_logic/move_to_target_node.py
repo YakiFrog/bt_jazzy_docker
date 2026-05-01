@@ -12,16 +12,27 @@ class MoveToTargetNode(Node):
     def __init__(self):
         super().__init__('move_to_target_node')
         
+        # パラメータの宣言
+        self.declare_parameter('odom_topic', '/odom')
+        self.declare_parameter('cmd_vel_topic', '/cmd_vel')
+        self.declare_parameter('max_linear_speed', 0.3)
+        self.declare_parameter('kp_linear', 0.2)
+        self.declare_parameter('kp_angular', 0.8)
+        self.declare_parameter('goal_tolerance', 0.1)
+        self.declare_parameter('yaw_tolerance', 0.2)
+        
         # 状態保持用
         self.current_x = 0.0
         self.current_y = 0.0
         self.current_yaw = 0.0
         
         # Odom 購読
-        self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
+        odom_topic = self.get_parameter('odom_topic').value
+        self.create_subscription(Odometry, odom_topic, self.odom_callback, 10)
         
         # CmdVel 配信
-        self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
+        cmd_vel_topic = self.get_parameter('cmd_vel_topic').value
+        self.cmd_vel_pub = self.create_publisher(Twist, cmd_vel_topic, 10)
         
         # Action Server
         self._action_server = ActionServer(
@@ -50,6 +61,13 @@ class MoveToTargetNode(Node):
         
         rate = self.create_rate(10) # 10Hz
         
+        # パラメータの取得
+        max_linear_speed = self.get_parameter('max_linear_speed').value
+        kp_linear = self.get_parameter('kp_linear').value
+        kp_angular = self.get_parameter('kp_angular').value
+        goal_tolerance = self.get_parameter('goal_tolerance').value
+        yaw_tolerance = self.get_parameter('yaw_tolerance').value
+
         while rclpy.ok():
             # 1. 目標までの距離と角度を計算
             dx = target_x - self.current_x
@@ -60,8 +78,8 @@ class MoveToTargetNode(Node):
             # 2. フィードバック送信
             goal_handle.publish_feedback(MoveToTarget.Feedback(distance=dist))
             
-            # 3. 終了判定（0.1m以内に近づいたら成功）
-            if dist < 0.1:
+            # 3. 終了判定
+            if dist < goal_tolerance:
                 break
             
             # 4. 中断チェック
@@ -75,17 +93,16 @@ class MoveToTargetNode(Node):
             
             # 向きの修正 (Yaw 誤差)
             yaw_error = angle_to_target - self.current_yaw
-            # 角度を -pi ~ pi に正規化
             yaw_error = math.atan2(math.sin(yaw_error), math.cos(yaw_error))
             
-            if abs(yaw_error) > 0.2:
+            if abs(yaw_error) > yaw_tolerance:
                 # まずはその場で旋回
                 twist.angular.z = 0.5 if yaw_error > 0 else -0.5
                 twist.linear.x = 0.0
             else:
                 # 前進しながら微調整
-                twist.linear.x = min(0.3, 0.2 * dist) # 最大 0.3m/s
-                twist.angular.z = 0.8 * yaw_error
+                twist.linear.x = min(max_linear_speed, kp_linear * dist)
+                twist.angular.z = kp_angular * yaw_error
                 
             self.cmd_vel_pub.publish(twist)
             rate.sleep()
