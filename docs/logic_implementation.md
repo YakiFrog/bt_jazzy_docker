@@ -1,51 +1,45 @@
 # ロジック実装ガイド (Python)
 
-`node_manager` で生成された各ノードのロジックは、`src/bt_logic/bt_logic/` ディレクトリ内にあります。
+## Condition ノードの実践的なパターン
 
-## Action ノードの実装 (`*_node.py`)
+判定ノードは単に `True/False` を返すだけでなく、**「ツリーからの引数（基準）」と「ロボットの状態」を比較する** のが基本です。
 
-Action ノードは `execute_callback` 内で処理を行います。
+### バッテリーチェックの例
+```python
+def handle_service(self, request, response):
+    # 1. 内部状態の取得（例：シミュレーションやセンサー値）
+    self.battery_level -= 1.0 
+    
+    # 2. ツリーからの引数（しきい値）の取得
+    # ノード作成時に設定したポート名（例：threshold）でアクセスします
+    threshold = request.threshold
+    
+    # 3. 判定
+    response.result = (self.battery_level > threshold)
+    
+    self.get_logger().info(f"Battery: {self.battery_level}% (Goal: >{threshold}%)")
+    return response
+```
+
+## Action ノードの実装ヒント
+
+Action ノードでは、`goal_handle.publish_feedback()` を使うことで、実行中の進捗を BT エンジンや GUI に伝えることができます。
 
 ```python
 def execute_callback(self, goal_handle):
-    # 1. 引数の取得
-    target_x = goal_handle.request.x
+    # 引数の取得
+    target = goal_handle.request.target_name
     
-    # 2. 実際のロボット制御（例：ループで少しずつ動かす）
-    for i in range(10):
-        # 中断チェック
-        if goal_handle.is_cancel_requested:
-            goal_handle.canceled()
-            return MoveToTarget.Result(success=False)
-            
-        # フィードバックの送信
-        goal_handle.publish_feedback(MoveToTarget.Feedback(progress=i*10))
-        time.sleep(0.5)
-
-    # 3. 完了報告
+    # 進捗の報告
+    goal_handle.publish_feedback(MyAction.Feedback(status="Processing..."))
+    
+    # 完了
     goal_handle.succeed()
-    return MoveToTarget.Result(success=True)
-```
-
-## Condition ノードの実装 (`*_node.py`)
-
-Condition ノードは `handle_service` 内で即座に結果を返します。
-
-```python
-def handle_service(self, request, response):
-    # 1. 引数の取得
-    threshold = request.threshold
-    
-    # 2. 判定ロジック
-    # SUCCESS (True) か FAILURE (False) かを返す
-    current_battery = 25.0
-    response.result = (current_battery > threshold)
-    
-    return response
+    return MyAction.Result(success=True)
 ```
 
 ---
 
-## ヒント：実機やシミュレータとの連携
-この Python ノードは通常の ROS 2 ノードです。
-`self.create_subscription` でセンサデータを購読したり、`self.create_publisher` でモータへの指令値を送ったりして、実際のロボットを制御してください。
+## 注意点
+*   Python ファイルを書き換えた後は、`run_logic` を再起動する必要があります。
+*   `colcon build` 時の `--symlink-install` により、Python コードの変更はビルドなしで反映されます。
