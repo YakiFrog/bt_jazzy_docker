@@ -7,7 +7,7 @@ import importlib
 import time
 from PySide6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
                              QLabel, QLineEdit, QPushButton, QComboBox, 
-                             QScrollArea, QFrame, QMessageBox, QCheckBox, QTabWidget, QListWidget, QRadioButton, QButtonGroup, QTextEdit)
+                             QScrollArea, QFrame, QMessageBox, QCheckBox, QTabWidget, QListWidget, QRadioButton, QButtonGroup, QTextEdit, QFileDialog)
 from PySide6.QtCore import Qt, QTimer, Signal, QObject
 
 # ROS 2 imports (GUI process needs to be a ROS node for testing)
@@ -66,7 +66,6 @@ class RosWorker(QObject):
 
             goal_msg = action_cls.Goal()
             for k, v in params.items():
-                # Simple type conversion
                 attr_type = type(getattr(goal_msg, k))
                 setattr(goal_msg, k, attr_type(v))
 
@@ -77,7 +76,6 @@ class RosWorker(QObject):
             self.log_signal.emit(f"Error: {str(e)}")
 
     def action_feedback_cb(self, feedback_msg):
-        # フィードバックの内容を動的に表示
         fb = feedback_msg.feedback
         fields = [f"{attr}: {getattr(fb, attr)}" for attr in fb.get_fields_and_field_types().keys()]
         self.log_signal.emit(f"Feedback >> {' | '.join(fields)}")
@@ -93,7 +91,6 @@ class RosWorker(QObject):
 
     def action_result_cb(self, future):
         result = future.result().result
-        status = future.result().status
         self.log_signal.emit(f"Result received. Success: {result.success}")
         self.result_signal.emit(result.success, f"Action Finished: {result.success}")
 
@@ -142,12 +139,23 @@ class ActionManagerGUI(QWidget):
             QPushButton#RemoveBtn { background-color: #dc3545; color: white; font-weight: bold; border-radius: 4px; padding: 12px; }
             QPushButton#TestBtn { background-color: #007bff; color: white; font-weight: bold; border-radius: 4px; padding: 12px; }
             QLineEdit, QComboBox, QTextEdit { padding: 8px; border: 1px solid #cccccc; border-radius: 4px; }
-            QFrame#HelpBox { background-color: #fff9db; border: 1px solid #ffec99; border-radius: 8px; }
+            QFrame#HelpBox { background-color: #f1f3f5; border: 1px solid #dee2e6; border-radius: 8px; }
             QListWidget { border: 1px solid #cccccc; border-radius: 4px; }
             QRadioButton { spacing: 8px; font-weight: bold; }
         """)
 
         main_layout = QVBoxLayout(self)
+        
+        # --- Global Config Area ---
+        config_box = QFrame(); config_box.setObjectName("HelpBox"); c_layout = QVBoxLayout(config_box)
+        c_layout.addWidget(QLabel("<b>📁 Trees Directory (XML 保存先)</b>"))
+        path_layout = QHBoxLayout()
+        self.trees_dir_input = QLineEdit("/ros2_ws/trees")
+        path_btn = QPushButton("Browse"); path_btn.clicked.connect(self.browse_trees_dir)
+        path_layout.addWidget(self.trees_dir_input); path_layout.addWidget(path_btn)
+        c_layout.addLayout(path_layout)
+        main_layout.addWidget(config_box)
+
         self.tabs = QTabWidget()
         self.tabs.addTab(self.create_tab_widget(), "作成 (Create)")
         self.tabs.addTab(self.manage_tab_widget(), "管理 (Manage)")
@@ -156,11 +164,12 @@ class ActionManagerGUI(QWidget):
 
         self.ros.log_signal.connect(self.update_test_log)
 
+    def browse_trees_dir(self):
+        dir_path = QFileDialog.getExistingDirectory(self, "Select Trees Directory", self.trees_dir_input.text())
+        if dir_path: self.trees_dir_input.setText(dir_path)
+
     def create_tab_widget(self):
         tab = QWidget(); layout = QVBoxLayout(tab); layout.setContentsMargins(20, 20, 20, 20)
-        help_box = QFrame(); help_box.setObjectName("HelpBox"); h_layout = QVBoxLayout(help_box)
-        h_layout.addWidget(QLabel("<b>💡 ノード作成</b><br>ActionかConditionを選んで作成してください。"))
-        layout.addWidget(help_box); layout.addSpacing(15)
         layout.addWidget(QLabel("<b>種類 (Node Type):</b>"))
         type_layout = QHBoxLayout(); self.type_group = QButtonGroup(self)
         self.radio_action = QRadioButton("Action (動作)"); self.radio_condition = QRadioButton("Condition (判定)")
@@ -193,18 +202,13 @@ class ActionManagerGUI(QWidget):
         layout.addWidget(QLabel("<b>🎯 ノード単体テスト</b>"))
         self.test_selector = QComboBox(); self.test_selector.currentIndexChanged.connect(self.on_test_node_selected)
         layout.addWidget(self.test_selector)
-        
         layout.addSpacing(15); layout.addWidget(QLabel("<b>Test Parameters:</b>"))
         self.test_params_container = QWidget(); self.test_params_layout = QVBoxLayout(self.test_params_container)
         layout.addWidget(self.test_params_container)
-        
-        self.test_btn = QPushButton("実行 (Run Test)"); self.test_btn.setObjectName("TestBtn")
-        self.test_btn.clicked.connect(self.run_test); layout.addWidget(self.test_btn)
-        
+        self.test_btn = QPushButton("実行 (Run Test)"); self.test_btn.setObjectName("TestBtn"); self.test_btn.clicked.connect(self.run_test); layout.addWidget(self.test_btn)
         layout.addSpacing(15); layout.addWidget(QLabel("<b>Execution Log:</b>"))
         self.test_log = QTextEdit(); self.test_log.setReadOnly(True); self.test_log.setStyleSheet("background-color: #f8f9fa; color: #1e2125;")
         layout.addWidget(self.test_log)
-        
         self.refresh_test_selector()
         return tab
 
@@ -230,24 +234,19 @@ class ActionManagerGUI(QWidget):
 
     def refresh_test_selector(self):
         if not hasattr(self, 'test_selector'): return
-        self.test_selector.clear()
-        self.test_selector.addItem("-- テストするノードを選択 --")
+        self.test_selector.clear(); self.test_selector.addItem("-- テストするノードを選択 --")
         for i in range(self.node_list.count()): self.test_selector.addItem(self.node_list.item(i).text())
 
     def on_test_node_selected(self):
         while self.test_params_layout.count():
             child = self.test_params_layout.takeAt(0)
             if child.widget(): child.widget().deleteLater()
-        
         text = self.test_selector.currentText()
         if "--" in text or not text: return
         node_type, name = text.split(": ")
-        
-        # Parse definition file to get parameters
         ext = ".srv" if node_type == "Condition" else ".action"
         path = f"src/bt_msgs/{'srv' if node_type == 'Condition' else 'action'}/{name}{ext}"
         if not os.path.exists(path): return
-        
         with open(path, 'r') as f: content = f.read()
         req_part = content.split("---")[0]
         self.test_inputs = {}
@@ -271,8 +270,7 @@ class ActionManagerGUI(QWidget):
         else: self.ros.call_service(name, params)
 
     def update_test_log(self, text):
-        self.test_log.append(text)
-        self.test_log.ensureCursorVisible()
+        self.test_log.append(text); self.test_log.ensureCursorVisible()
 
     def generate(self):
         name = self.name_input.text().strip()
@@ -287,16 +285,22 @@ class ActionManagerGUI(QWidget):
         except Exception as e: QMessageBox.critical(self, "Error", str(e))
 
     def create_empty_tree(self):
+        trees_dir = self.trees_dir_input.text().strip()
         name = self.tree_name_input.text().strip()
         if not name.endswith(".xml"): name += ".xml"
-        tree_path = f"src/bt_core/tree/{name}"
+        tree_path = os.path.join(trees_dir, name)
         os.makedirs(os.path.dirname(tree_path), exist_ok=True)
         with open(tree_path, 'w') as f:
             f.write(f'<root BTCPP_format="4">\n  <BehaviorTree ID="MainTree">\n    <Sequence>\n      <AlwaysSuccess name="placeholder"/>\n    </Sequence>\n  </BehaviorTree>\n</root>')
-        QMessageBox.information(self, "Success", "Empty tree created.")
+        QMessageBox.information(self, "Success", f"Empty tree created at {tree_path}")
 
     def update_palette_only(self, name, fields, is_condition):
-        path = "src/bt_core/tree/nodes_library.xml"
+        trees_dir = self.trees_dir_input.text().strip()
+        path = os.path.join(trees_dir, "nodes_library.xml")
+        os.makedirs(trees_dir, exist_ok=True)
+        if not os.path.exists(path):
+            with open(path, 'w') as f: f.write('<root BTCPP_format="4">\n    <TreeNodesModel>\n    </TreeNodesModel>\n</root>')
+        
         cpp_t = {"float32": "float", "int32": "int", "string": "std::string", "bool": "bool"}
         ports = "".join([f'            <input_port name="{f.split(":")[0]}" type="{cpp_t[f.split(":")[1]]}"/>\n' for f in fields])
         node_tag = "Condition" if is_condition else "Action"
@@ -366,7 +370,7 @@ class ActionManagerGUI(QWidget):
             content = re.sub(rf'class {name}{sfx} : public {base}.*?\n}};\n\n', '', content, flags=re.DOTALL)
             content = re.sub(rf'params\.default_port_value = "{snake}";\n    factory\.registerNodeType<{name}{sfx}>\("{name}", params\);\n', '', content)
             with open(cp, 'w') as f: f.write(content)
-        pp = "src/bt_core/tree/nodes_library.xml"
+        pp = os.path.join(self.trees_dir_input.text().strip(), "nodes_library.xml")
         if os.path.exists(pp):
             with open(pp, 'r') as f: content = f.read()
             tag = "Condition" if node_type == "Condition" else "Action"
