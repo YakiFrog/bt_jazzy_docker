@@ -2,6 +2,7 @@
 
 # .bashrc_docker に追記例
 export ROS_DOMAIN_ID=56
+export FASTRTPS_DEFAULT_PROFILES_FILE=/ros2_ws/fastdds_noshm.xml
 
 # 基本コマンド
 alias build='colcon build --symlink-install'

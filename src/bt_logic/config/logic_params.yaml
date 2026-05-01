@@ -3,7 +3,7 @@
 move_to_target_node:
   ros__parameters:
     # トピック名
-    odom_topic: "/odom"
+    odom_topic: "/sirius3/odom"
     cmd_vel_topic: "/cmd_vel"
     
     # 制御パラメータ
