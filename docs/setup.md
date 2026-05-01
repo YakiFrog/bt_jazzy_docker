@@ -12,7 +12,19 @@
     *   Linux: 標準でインストールされています。
     *   Windows: VcXsrv や GWSL などが必要です。
 
-## 2. ビルドと起動
+## 2. ホスト側へのエイリアス登録 (Host Aliases)
+
+効率的に開発を行うために、ホストマシンの `~/.bashrc` に以下のエイリアスを登録することを強く推奨します。
+
+```bash
+# Behavior Tree Docker 操作用エイリアス
+alias bt_start='xhost +local:docker > /dev/null 2>&1 && cd ~/sirius_jazzy_ws/bt_jazzy_docker && docker compose run --rm --name bt_dev_container bt_dev'
+alias bt_enter='docker exec -it bt_dev_container bash'
+```
+
+登録後、`source ~/.bashrc` を実行して反映させてください。
+
+## 3. ビルドと起動
 
 リポジトリのルートディレクトリで以下の手順を実行します。
 
