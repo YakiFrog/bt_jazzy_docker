@@ -6,17 +6,21 @@ class CheckBatteryNode(Node):
     def __init__(self):
         super().__init__('check_battery_node')
         self.srv = self.create_service(CheckBattery, 'check_battery', self.handle_service)
-        self.get_logger().info('CheckBattery Condition Node initialized')
+        self.battery_level = 100.0  # 初期値 100%
+        self.get_logger().info('CheckBattery Condition Node initialized (Simulated 100%)')
 
     def handle_service(self, request, response):
-        tekito = request.tekito
-        self.get_logger().info(f'Checking CheckBattery: tekito={tekito}')
+        # サービスが呼ばれるたびに 5% ずつ減らしてみる
+        self.battery_level -= 5.0
+        if self.battery_level < 0: self.battery_level = 0.0
+
+        # 10% 以下なら失敗 (False)
+        threshold = 10.0
+        is_ok = self.battery_level > threshold
         
-        # --- [判定ロジックをここに記述してください] ---
-        # result = True (SUCCESS) or False (FAILURE)
-        response.result = True
-        # --------------------------------------------
+        self.get_logger().info(f'Battery Level: {self.battery_level}% (Threshold: {threshold}%) -> Result: {is_ok}')
         
+        response.result = is_ok
         return response
 
 def main(args=None):
