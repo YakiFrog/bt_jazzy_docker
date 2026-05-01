@@ -15,7 +15,7 @@ fi
 
 # サンプル実行用
 alias run_logic='ros2 launch bt_logic action_logic.launch.py'
-alias run_bt='ros2 run bt_core bt_node'
+alias run_bt='ros2 run bt_core bt_node --ros-args -p tree_xml:=/ros2_ws/trees/my_tree.xml'
 alias node_manager='/ros2_ws/bt_node_manager.py'
 
 # 便利設定
