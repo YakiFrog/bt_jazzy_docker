@@ -74,12 +74,23 @@ class MoveToTargetNode(Node):
             dy = target_y - self.current_y
             dist = math.sqrt(dx**2 + dy**2)
             angle_to_target = math.atan2(dy, dx)
+
+            # 向きの修正 (Yaw 誤差)
+            yaw_error = angle_to_target - self.current_yaw
+            yaw_error = math.atan2(math.sin(yaw_error), math.cos(yaw_error))
             
             # 2. フィードバック送信
-            goal_handle.publish_feedback(MoveToTarget.Feedback(distance=dist))
+            status_msg = ""
+            if abs(yaw_error) > yaw_tolerance:
+                status_msg = f"Rotating (Err: {yaw_error:.2f})"
+            else:
+                status_msg = f"Moving (Dist: {dist:.2f})"
+            
+            goal_handle.publish_feedback(MoveToTarget.Feedback(distance=dist, status=status_msg))
             
             # 3. 終了判定
             if dist < goal_tolerance:
+                self.get_logger().info('Goal Reached!')
                 break
             
             # 4. 中断チェック
@@ -91,20 +102,21 @@ class MoveToTargetNode(Node):
             # 5. 速度計算 (P制御)
             twist = Twist()
             
-            # 向きの修正 (Yaw 誤差)
-            yaw_error = angle_to_target - self.current_yaw
-            yaw_error = math.atan2(math.sin(yaw_error), math.cos(yaw_error))
-            
             if abs(yaw_error) > yaw_tolerance:
-                # まずはその場で旋回
-                twist.angular.z = 0.5 if yaw_error > 0 else -0.5
+                # 旋回中
+                twist.angular.z = 0.3 if yaw_error > 0 else -0.3 # 0.5から0.3へ減速して安定化
                 twist.linear.x = 0.0
             else:
-                # 前進しながら微調整
+                # 前進中
                 twist.linear.x = min(max_linear_speed, kp_linear * dist)
                 twist.angular.z = kp_angular * yaw_error
                 
             self.cmd_vel_pub.publish(twist)
+            
+            # ターミナルデバッグ用
+            if int(time.time() * 10) % 5 == 0: # 0.5秒おきに表示
+                self.get_logger().info(f"DIST: {dist:.2f}m, YAW_ERR: {yaw_error:.2f}rad -> V: {twist.linear.x:.2f}, W: {twist.angular.z:.2f}")
+            
             rate.sleep()
             
         self.stop_robot()
