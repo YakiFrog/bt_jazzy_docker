@@ -131,11 +131,17 @@ class MoveToTargetNode(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = MoveToTargetNode()
+    
+    # マルチスレッド実行エグゼキュータを使用して、Action実行中もOdom購読を並行して行えるようにする
+    executor = rclpy.executors.MultiThreadedExecutor()
+    executor.add_node(node)
+    
     try:
-        rclpy.spin(node)
+        executor.spin()
     except KeyboardInterrupt:
         pass
     finally:
+        executor.shutdown()
         node.destroy_node()
         rclpy.shutdown()
 
