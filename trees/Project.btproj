@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root BTCPP_format="4" project_name="BT_Studio_Project">
+    <!-- 設計したツリーをここにリストアップ -->
+    <include path="my_tree.xml"/>
+    <include path="my_tree2.xml"/>
+    
+    <!-- スキル定義（パレット）を外部から読み込む -->
+    <include path="nodes_library.xml"/>
+</root>
