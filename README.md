@@ -36,6 +36,7 @@ run_bt      # 知能の起動。番号で XML を選択できます 🆕
 
 ## 📖 詳細ドキュメント
 
+*   **[環境構築ガイド](docs/setup.md)**: 最初に読んでください。Docker のビルドや GUI 設定について。 🆕
 *   **[BT Node Manager の使い方](docs/node_manager.md)**: GUI を使ったスキルの作り方とテスト方法。
 *   **[ロジックの実装ガイド](docs/logic_implementation.md)**: Python ロジックの書き方と実践的な判定例。
 *   **[トラブルシューティング](docs/troubleshooting.md)**: よくあるエラー（XML の引数漏れなど）の解決策。 🆕
