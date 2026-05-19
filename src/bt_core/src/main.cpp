@@ -245,6 +245,13 @@ int main(int argc, char** argv)
     rclcpp::init(argc, argv);
     auto node = std::make_shared<rclcpp::Node>("bt_node_client");
 
+    // DDSディスカバリの同期を待つために、初期化直後にノードを少しスピンする
+    RCLCPP_INFO(node->get_logger(), "Waiting for DDS discovery to sync...");
+    for (int i = 0; i < 5; ++i) {
+        rclcpp::spin_some(node);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
     // パラメータの宣言 (読み込むXMLファイルを引数で変えられるようにする)
     node->declare_parameter("tree_xml", "/ros2_ws/src/bt_core/tree/my_tree.xml");
     std::string tree_xml_path = node->get_parameter("tree_xml").as_string();

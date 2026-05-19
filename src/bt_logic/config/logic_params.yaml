@@ -21,3 +21,8 @@ rotate_degrees_node:
     max_angular_speed: 0.5
     kp_angular: 1.0
     yaw_tolerance: 0.05
+
+say_something_node:
+  ros__parameters:
+    face_grpc_host: "localhost"
+    face_grpc_port: 50052

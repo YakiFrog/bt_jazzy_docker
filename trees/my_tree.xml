@@ -3,11 +3,22 @@
   <BehaviorTree ID="MainTree">
     <Sequence>
       <SaySomething message="XMLファイルからミッションを開始します。(3, 3)へ移動！"/>
+      <MoveToPose x="1.0"
+                  y="1.0"
+                  yaw="0.0"/>
     </Sequence>
   </BehaviorTree>
 
   <!-- Description of Node Models (used by Groot) -->
   <TreeNodesModel>
+    <Action ID="MoveToPose">
+      <input_port name="x"
+                  type="float">目的地のX座標 [m]</input_port>
+      <input_port name="y"
+                  type="float">目的地のY座標 [m]</input_port>
+      <input_port name="yaw"
+                  type="float">目的地の向き (Yaw) [rad] (オプション)</input_port>
+    </Action>
     <Action ID="SaySomething">
       <input_port name="message"
                   type="std::string"/>

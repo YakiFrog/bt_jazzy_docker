@@ -38,8 +38,8 @@ RUN apt-get update && apt-get install -y \
     fonts-noto-color-emoji \
     && rm -rf /var/lib/apt/lists/*
 
-# Install PySide6 and gRPC
-RUN pip3 install --break-system-packages PySide6 grpcio grpcio-tools
+# Install PySide6 and gRPC (downgrading setuptools to fix colcon compatibility)
+RUN pip3 install --break-system-packages PySide6 grpcio grpcio-tools "setuptools<69.0.0"
 
 # Create workspace
 WORKDIR /ros2_ws

@@ -16,6 +16,11 @@ import face_control_pb2_grpc
 class SaySomethingNode(Node):
     def __init__(self):
         super().__init__('say_something_node')
+        
+        # gRPC接続先のパラメータ定義 (デフォルト: localhost:50052)
+        self.declare_parameter('face_grpc_host', 'localhost')
+        self.declare_parameter('face_grpc_port', 50052)
+        
         self._action_server = ActionServer(
             self, SaySomething, 'say_something', self.execute_callback)
         self.get_logger().info('SaySomething Node initialized')
@@ -24,8 +29,11 @@ class SaySomethingNode(Node):
         message = goal_handle.request.message
         self.get_logger().info(f'Executing SaySomething: {message}')
         
-        # 50052番ポートのPythonControlServiceへgRPCでSpeak指令を送信
-        target = 'localhost:50052'
+        # パラメータから接続先を取得
+        host = self.get_parameter('face_grpc_host').get_parameter_value().string_value
+        port = self.get_parameter('face_grpc_port').get_parameter_value().integer_value
+        target = f'{host}:{port}'
+        
         try:
             with grpc.insecure_channel(target) as channel:
                 stub = face_control_pb2_grpc.PythonControlServiceStub(channel)
@@ -33,7 +41,7 @@ class SaySomethingNode(Node):
                 stub.Speak(request)
             self.get_logger().info(f'Successfully sent Speak request to {target}')
         except Exception as e:
-            self.get_logger().error(f'Failed to send Speak request: {e}')
+            self.get_logger().error(f'Failed to send Speak request to {target}: {e}')
 
         # テキストの長さから大体の発話時間（秒）を推測して待機する（1文字約0.2秒、最小1.5秒）
         # ※タグ部分（[happy]など）は文字数カウントから除外
