@@ -9,6 +9,8 @@
 #include <bt_msgs/action/tekito_action.hpp>
 #include <bt_msgs/action/rotate_degrees.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <bt_msgs/action/move_to_pose.hpp>
+#include <bt_msgs/action/set_face_expression.hpp>
 
 #include <bt_msgs/srv/condition_check.hpp>
 #include <bt_msgs/srv/check_battery.hpp>
@@ -54,6 +56,33 @@ protected:
 };
 
 // --- [NODE_CLASS_MARKER] ---
+class MoveToPoseAction : public RosActionNode<bt_msgs::action::MoveToPose>
+{
+public:
+    MoveToPoseAction(const std::string& name, const NodeConfig& conf, const RosNodeParams& params) : RosActionNode<bt_msgs::action::MoveToPose>(name, conf, params) {}
+    static PortsList providedPorts() { return providedBasicPorts({ InputPort<float>("x"), InputPort<float>("y"), InputPort<float>("yaw") }); }
+    bool setGoal(Goal& goal) override { 
+        if (!getInput("x", goal.x) || !getInput("y", goal.y)) return false;
+        getInput("yaw", goal.yaw); // yaw is optional (will keep default if not in blackboard)
+        return true; 
+    }
+    NodeStatus onResultReceived(const WrappedResult& wr) override { return wr.result->success ? NodeStatus::SUCCESS : NodeStatus::FAILURE; }
+    NodeStatus onFeedback(const std::shared_ptr<const bt_msgs::action::MoveToPose::Feedback> feedback) override {
+        std::cout << "[BT] Nav2 remaining distance: " << feedback->distance << "m" << std::endl;
+        return NodeStatus::RUNNING;
+    }
+};
+
+class SetFaceExpressionAction : public RosActionNode<bt_msgs::action::SetFaceExpression>
+{
+public:
+    SetFaceExpressionAction(const std::string& name, const NodeConfig& conf, const RosNodeParams& params) : RosActionNode<bt_msgs::action::SetFaceExpression>(name, conf, params) {}
+    static PortsList providedPorts() { return providedBasicPorts({ InputPort<std::string>("expression") }); }
+    bool setGoal(Goal& goal) override { getInput("expression", goal.expression);
+        return true; }
+    NodeStatus onResultReceived(const WrappedResult& wr) override { return wr.result->success ? NodeStatus::SUCCESS : NodeStatus::FAILURE; }
+};
+
 
 class CheckBatteryCondition : public RosServiceNode<bt_msgs::srv::CheckBattery>
 {
@@ -220,11 +249,18 @@ int main(int argc, char** argv)
     node->declare_parameter("tree_xml", "/ros2_ws/src/bt_core/tree/my_tree.xml");
     std::string tree_xml_path = node->get_parameter("tree_xml").as_string();
 
+    node->declare_parameter("loop_tree", false);
+    bool loop_tree = node->get_parameter("loop_tree").as_bool();
+
     BehaviorTreeFactory factory;
     RosNodeParams params;
     params.nh = node;
 
     // --- [ACTION_REGISTRATION_MARKER] ---
+    params.default_port_value = "move_to_pose";
+    factory.registerNodeType<MoveToPoseAction>("MoveToPose", params);
+    params.default_port_value = "set_face_expression";
+    factory.registerNodeType<SetFaceExpressionAction>("SetFaceExpression", params);
     params.default_port_value = "check_battery";
     factory.registerNodeType<CheckBatteryCondition>("CheckBattery", params);
 
@@ -252,12 +288,22 @@ int main(int argc, char** argv)
     
     Groot2Publisher publisher(tree);
 
-    std::cout << "--- BT Mission Started ---" << std::endl;
-
-    while (rclcpp::ok()) {
-        tree.tickWhileRunning();
-        rclcpp::spin_some(node);
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    if (loop_tree) {
+        std::cout << "--- BT Mission Started (Loop Mode) ---" << std::endl;
+        while (rclcpp::ok()) {
+            tree.tickWhileRunning();
+            rclcpp::spin_some(node);
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+    } else {
+        std::cout << "--- BT Mission Started (Single-Run Mode) ---" << std::endl;
+        NodeStatus status = NodeStatus::RUNNING;
+        while (rclcpp::ok() && status == NodeStatus::RUNNING) {
+            status = tree.tickExactlyOnce();
+            rclcpp::spin_some(node);
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+        std::cout << "--- BT Mission Finished with status: " << toStr(status) << " ---" << std::endl;
     }
 
     rclcpp::shutdown();

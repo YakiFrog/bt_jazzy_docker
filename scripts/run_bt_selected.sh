@@ -36,8 +36,19 @@ fi
 SELECTED_TREE="${trees[$choice]}"
 SELECTED_PATH="$TREES_DIR/$SELECTED_TREE"
 
+read -p "ループ実行しますか？ (y/N, デフォルト: N): " loop_choice
+loop_choice=${loop_choice:-n}
+
+if [[ "$loop_choice" =~ ^[yY](es)?$ ]]; then
+    LOOP_FLAG="true"
+    MODE_STR="Loop Mode"
+else
+    LOOP_FLAG="false"
+    MODE_STR="Single-Run Mode"
+fi
+
 echo "------------------------------------------------"
-echo "次のツリーを実行中: $SELECTED_TREE"
+echo "次のツリーを実行中: $SELECTED_TREE ($MODE_STR)"
 echo "------------------------------------------------"
 
-ros2 run bt_core bt_node --ros-args -p tree_xml:="$SELECTED_PATH"
+ros2 run bt_core bt_node --ros-args -p tree_xml:="$SELECTED_PATH" -p loop_tree:="$LOOP_FLAG"

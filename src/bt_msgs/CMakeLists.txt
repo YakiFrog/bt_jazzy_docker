@@ -6,6 +6,8 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(action_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
+  "action/MoveToPose.action"
+  "action/SetFaceExpression.action"
   "srv/CheckBattery.srv"
   "srv/ConditionCheck.srv"
   "action/TekitoAction.action"

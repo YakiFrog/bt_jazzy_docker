@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
     ros-jazzy-behaviortree-cpp \
     ros-jazzy-ros2-control \
     ros-jazzy-ros2-controllers \
+    ros-jazzy-nav2-msgs \
     libncurses5-dev \
     libncursesw5-dev \
     python3-tk \
@@ -37,8 +38,8 @@ RUN apt-get update && apt-get install -y \
     fonts-noto-color-emoji \
     && rm -rf /var/lib/apt/lists/*
 
-# Install PySide6
-RUN pip3 install --break-system-packages PySide6
+# Install PySide6 and gRPC
+RUN pip3 install --break-system-packages PySide6 grpcio grpcio-tools
 
 # Create workspace
 WORKDIR /ros2_ws

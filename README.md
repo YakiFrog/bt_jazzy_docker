@@ -18,6 +18,20 @@
 
 ## 🚀 開発の黄金サイクル
 
+### 0. Dockerコンテナの起動と進入
+本環境のコマンド（`build`, `run_logic`, `run_bt` など）は、すべて**Dockerコンテナの内部で実行します**。
+開発を始める前に、ホストPC上で以下のコマンドを実行してコンテナを起動し、中に入ってください：
+
+```bash
+# コンテナの起動（X11の表示を許可）
+xhost +local:docker
+docker compose run --rm --name bt_dev_container bt_dev
+
+# （別ターミナルから）起動中のコンテナへ追加で入る場合
+docker exec -it bt_dev_container bash
+```
+※ [環境構築ガイド](docs/setup.md) に記載のエイリアスを登録している場合は、ホストPC上で `bt_start` や `bt_enter` を実行するだけで簡単に入ることができます。
+
 ### 1. スキルの生成とテスト
 `node_manager` コマンドで GUI を起動し、新しいアクション（Action）や判定（Condition）を作成。
 **「Test」タブ** を使い、ノードが単体で正しく動くか（内部ログや戻り値）を確認します。
@@ -41,6 +55,7 @@ run_bt      # 知能の起動。番号で XML を選択できます 🆕
 *   **[ロジックの実装ガイド](docs/logic_implementation.md)**: Python ロジックの書き方と実践的な判定例。
 *   **[トラブルシューティング](docs/troubleshooting.md)**: よくあるエラー（XML の引数漏れなど）の解決策。 🆕
 *   **[アーキテクチャ詳細](docs/architecture.md)**: システム全体の通信構造について。
+*   **[LLM行動制御の連携設計 (sirius_face_anim2)](../../../sirius_face_anim2/docs/README_LLM_ACTION_CONTROL.md)**: ローカルLLMとBehavior Treeの連携・小分け設計に関するドキュメント。🆕
 
 ---
 

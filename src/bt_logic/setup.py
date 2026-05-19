@@ -27,6 +27,8 @@ setup(
     entry_points={
         'console_scripts': [
             # --- [CONSOLE_SCRIPTS_MARKER] ---
+            'move_to_pose_node = bt_logic.move_to_pose_node:main',
+            'set_face_expression_node = bt_logic.set_face_expression_node:main',
             'check_battery_node = bt_logic.check_battery_node:main',
             'tekito_action_node = bt_logic.tekito_action_node:main',
             'clean_room_node = bt_logic.clean_room_node:main',
