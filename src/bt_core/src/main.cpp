@@ -253,7 +253,7 @@ int main(int argc, char** argv)
     }
 
     // パラメータの宣言 (読み込むXMLファイルを引数で変えられるようにする)
-    node->declare_parameter("tree_xml", "/ros2_ws/src/bt_core/tree/my_tree.xml");
+    node->declare_parameter("tree_xml", "/ros2_ws/trees/my_tree.xml");
     std::string tree_xml_path = node->get_parameter("tree_xml").as_string();
 
     node->declare_parameter("loop_tree", false);
