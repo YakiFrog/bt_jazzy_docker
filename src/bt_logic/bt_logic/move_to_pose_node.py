@@ -60,7 +60,7 @@ class MoveToPoseNode(Node):
         # 進行状況のフィードバック受信用クロージャ
         def nav2_feedback_callback(feedback_msg):
             distance = feedback_msg.feedback.distance_remaining
-            self.get_logger().info(f'Nav2 Feedback: Remaining Distance = {distance:.2f}m', once_every_n_steps=10)
+            self.get_logger().info(f'Nav2 Feedback: Remaining Distance = {distance:.2f}m', throttle_duration_sec=1.0)
             goal_handle.publish_feedback(MoveToPose.Feedback(distance=distance))
             
         # アクション送信
