@@ -2,10 +2,27 @@
 <root BTCPP_format="4">
   <BehaviorTree ID="MainTree">
     <Sequence>
-      <SaySomething message="XMLファイルからミッションを開始します。(3, 3)へ移動！"/>
-      <MoveToPose x="1.0"
-                  y="1.0"
-                  yaw="0.0"/>
+      <SaySomething message="出発するぞ！"/>
+      <MoveToPose x="0.0"
+                  y="0.55"
+                  degrees="67.0"/>
+      <MoveToPose x="2.0"
+                  y="8.4"
+                  degrees="67.0"/>
+      <MoveToPose x="3.60"
+                  y="15.20"
+                  degrees="-101"/>
+      <SaySomething message="折り返すのだ"/>
+      <MoveToPose x="2.0"
+                  y="8.4"
+                  degrees="-95"/>
+      <MoveToPose x="0.0"
+                  y="0.55"
+                  degrees="164"/>
+      <MoveToPose x="-5.10"
+                  y="3.05"
+                  degrees="-5"/>
+      <SaySomething message="ただいまなのだ"/>
     </Sequence>
   </BehaviorTree>
 
@@ -16,8 +33,9 @@
                   type="float">目的地のX座標 [m]</input_port>
       <input_port name="y"
                   type="float">目的地のY座標 [m]</input_port>
-      <input_port name="yaw"
-                  type="float">目的地の向き (Yaw) [rad] (オプション)</input_port>
+      <input_port name="degrees"
+                  default="0.0"
+                  type="float">目的地の向き [度] (0=正面向き, 90=左, -90=右, 180=後ろ向き)</input_port>
     </Action>
     <Action ID="SaySomething">
       <input_port name="message"

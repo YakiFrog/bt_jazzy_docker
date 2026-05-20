@@ -60,10 +60,10 @@ class MoveToPoseAction : public RosActionNode<bt_msgs::action::MoveToPose>
 {
 public:
     MoveToPoseAction(const std::string& name, const NodeConfig& conf, const RosNodeParams& params) : RosActionNode<bt_msgs::action::MoveToPose>(name, conf, params) {}
-    static PortsList providedPorts() { return providedBasicPorts({ InputPort<float>("x"), InputPort<float>("y"), InputPort<float>("yaw") }); }
+    static PortsList providedPorts() { return providedBasicPorts({ InputPort<float>("x"), InputPort<float>("y"), InputPort<float>("degrees", 0.0f, "目的地の向き [度] (0=正面向き)") }); }
     bool setGoal(Goal& goal) override { 
         if (!getInput("x", goal.x) || !getInput("y", goal.y)) return false;
-        getInput("yaw", goal.yaw); // yaw is optional (will keep default if not in blackboard)
+        getInput("degrees", goal.degrees); // degrees is optional (default 0)
         return true; 
     }
     NodeStatus onResultReceived(const WrappedResult& wr) override { return wr.result->success ? NodeStatus::SUCCESS : NodeStatus::FAILURE; }
@@ -246,8 +246,9 @@ int main(int argc, char** argv)
     auto node = std::make_shared<rclcpp::Node>("bt_node_client");
 
     // DDSディスカバリの同期を待つために、初期化直後にノードを少しスピンする
+    // ※マルチマシン・コンテナ間通信ではディスカバリに数秒かかるため長めに設定
     RCLCPP_INFO(node->get_logger(), "Waiting for DDS discovery to sync...");
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < 50; ++i) {
         rclcpp::spin_some(node);
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
